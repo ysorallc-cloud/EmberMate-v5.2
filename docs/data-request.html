@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EmberMate Data Request - How to access and export your health data">
+    <title>Data Request - EmberMate</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.7; color: #1f2937; background: #f9fafb; padding: 20px;
+        }
+        .container {
+            max-width: 900px; margin: 0 auto; background: white;
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+            color: white; padding: 40px 30px;
+        }
+        header h1 { font-size: 2.5em; font-weight: 300; margin-bottom: 10px; }
+        header p { font-size: 1.1em; opacity: 0.95; }
+        .content { padding: 40px 30px; }
+        h2 {
+            color: #0D9488; margin-top: 40px; margin-bottom: 15px; font-size: 1.8em;
+            border-bottom: 2px solid #14B8A6; padding-bottom: 10px;
+        }
+        h3 { color: #374151; margin-top: 25px; margin-bottom: 12px; font-size: 1.3em; }
+        p { margin-bottom: 15px; }
+        ol { margin-left: 30px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        .highlight {
+            background: #ecfdf5; border-left: 4px solid #14B8A6;
+            padding: 20px; margin: 20px 0; border-radius: 8px;
+        }
+        .back-link {
+            display: inline-block; color: #14B8A6; text-decoration: none;
+            margin-bottom: 20px; font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        footer {
+            background: #f9fafb; padding: 30px; text-align: center;
+            color: #6b7280; border-top: 1px solid #e5e7eb;
+        }
+        @media (max-width: 768px) {
+            header h1 { font-size: 2em; }
+            .content { padding: 30px 20px; }
+            h2 { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 Data Request</h1>
+            <p>How to access and export your EmberMate health data</p>
+        </header>
+
+        <div class="content">
+            <a href="https://ysorallc.org/privacy" class="back-link">← Back to Privacy Policy</a>
+
+            <div class="highlight">
+                <strong>Your data is already in your hands.</strong> EmberMate stores everything locally on your device. There is no server-side copy of your data. You can export it at any time directly from the app.
+            </div>
+
+            <h2>Export Your Data</h2>
+            <p>EmberMate provides built-in data export in two formats:</p>
+
+            <h3>JSON Export (Complete Data)</h3>
+            <ol>
+                <li>Open <strong>EmberMate</strong> on your device</li>
+                <li>Go to <strong>Settings</strong> (gear icon)</li>
+                <li>Tap <strong>Backup &amp; Restore</strong></li>
+                <li>Tap <strong>Export Backup</strong></li>
+                <li>Choose where to save or share the file</li>
+            </ol>
+            <p>This creates a complete, encrypted backup of all your health data in JSON format.</p>
+
+            <h3>Daily Care Report (Shareable Summary)</h3>
+            <ol>
+                <li>Open <strong>EmberMate</strong> on your device</li>
+                <li>Go to <strong>Settings</strong> &gt; <strong>Data &amp; Privacy</strong></li>
+                <li>Tap <strong>Export daily report</strong></li>
+                <li>Share with your care team via email, print, or messaging</li>
+            </ol>
+            <p>This creates a human-readable summary suitable for sharing with healthcare providers.</p>
+
+            <h2>Why We Cannot Provide Your Data</h2>
+            <p>Unlike most apps, EmberMate does not store your health data on our servers. This means:</p>
+            <ol>
+                <li>We do not have a copy of your data</li>
+                <li>We cannot retrieve data on your behalf</li>
+                <li>We cannot provide data in response to a CCPA/GDPR subject access request, because we do not possess it</li>
+            </ol>
+            <p>This is by design. Your privacy is protected because your data never leaves your device unless you explicitly share it.</p>
+
+            <h2>Lost Your Data?</h2>
+            <p>If you have lost access to your data (for example, after switching devices without exporting first), we are unable to recover it. We recommend regular backups using the Export Backup feature.</p>
+
+            <h2>Need Help?</h2>
+            <p>If you have questions about accessing your data or need assistance with the export process, contact us at <a href="mailto:support@ysorallc.com">support@ysorallc.com</a>.</p>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 YSORA LLC. All rights reserved.</p>
+            <p style="margin-top: 10px;">
+                <a href="https://ysorallc.org/privacy" style="color: #14B8A6;">Privacy Policy</a> &middot;
+                <a href="https://ysorallc.org/terms" style="color: #14B8A6;">Terms of Service</a> &middot;
+                <a href="https://ysorallc.org/support" style="color: #14B8A6;">Support</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

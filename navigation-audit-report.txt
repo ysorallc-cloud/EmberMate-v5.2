@@ -1,0 +1,59 @@
+EmberMate Navigation Audit Report
+Generated: Sat Jan 31 19:13:59 CST 2026
+
+Navigation Files:
+app/settings/index.tsx
+app/settings/backup.tsx
+app/settings/security.tsx
+app/family-activity.tsx
+app/medication-schedule.tsx
+app/vitals-log.tsx
+app/symptom-log.tsx
+app/log-mood.tsx
+app/coffee.tsx
+app/log-evening-wellness.tsx
+app/daily-checkin.tsx
+app/emergency.tsx
+app/log-note.tsx
+app/medication-form.tsx
+app/quick-action-entry.tsx
+app/correlation-test.tsx
+app/log-sleep.tsx
+app/complete-checkin.tsx
+app/care-summary-export.tsx
+app/medication-confirm.tsx
+app/calendar.tsx
+app/quick-log-more.tsx
+app/correlation-report.tsx
+app/caregiver-management.tsx
+app/log-appointment.tsx
+app/log-vitals.tsx
+app/medication-interactions.tsx
+app/patient/index.tsx
+app/log-prn.tsx
+app/log-symptom.tsx
+app/quick-note.tsx
+app/family-sharing.tsx
+app/log-water.tsx
+app/photos.tsx
+app/quick-checkin.tsx
+app/care-brief.tsx
+app/notification-settings.tsx
+app/log-activity.tsx
+app/symptoms-log.tsx
+app/hub/reports.tsx
+app/hub/reports/correlation.tsx
+app/hub/reports/medication.tsx
+app/visit-prep.tsx
+app/medications.tsx
+app/appointment-form.tsx
+app/appointments.tsx
+app/log-morning-wellness.tsx
+app/log-meal.tsx
+
+Issues Summary:
+- Missing router import: 0
+- Missing SafeAreaView: 15
+- Small buttons: 0
+- Deprecated methods: 0
+- Empty handlers: 47

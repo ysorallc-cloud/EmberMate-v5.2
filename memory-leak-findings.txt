@@ -1,0 +1,37 @@
+EmberMate Memory Leak Detection Report
+Generated: Sat Jan 31 19:24:57 CST 2026
+======================================
+
+ANIMATIONS WITHOUT CLEANUP
+==========================
+No issues
+
+TIMERS WITHOUT CLEANUP
+=====================
+No issues
+
+EVENT LISTENERS WITHOUT CLEANUP
+===============================
+No issues
+
+INFINITE ANIMATIONS (HIGH RISK)
+===============================
+No infinite animations
+
+MISSING useIsFocused IN ANIMATED SCREENS
+========================================
+app/(onboarding)/index.tsx - Consider adding useIsFocused
+app/(onboarding)/screens/ProblemScreen.tsx - Consider adding useIsFocused
+app/(onboarding)/screens/WelcomeScreen.tsx - Consider adding useIsFocused
+app/(onboarding)/screens/ReadyToStartScreen.tsx - Consider adding useIsFocused
+app/(onboarding)/screens/CoffeeMomentScreen.tsx - Consider adding useIsFocused
+app/(onboarding)/screens/SolutionScreen.tsx - Consider adding useIsFocused
+app/(onboarding)/components/AuroraBackground.tsx - Consider adding useIsFocused
+
+SUMMARY
+=======
+
+Animation issues:      0
+Timer issues:          0
+Listener issues:       0
+Total issues:          0

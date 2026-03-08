@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EmberMate Data Deletion - How to delete your health data">
+    <title>Data Deletion - EmberMate</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.7; color: #1f2937; background: #f9fafb; padding: 20px;
+        }
+        .container {
+            max-width: 900px; margin: 0 auto; background: white;
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+            color: white; padding: 40px 30px;
+        }
+        header h1 { font-size: 2.5em; font-weight: 300; margin-bottom: 10px; }
+        header p { font-size: 1.1em; opacity: 0.95; }
+        .content { padding: 40px 30px; }
+        h2 {
+            color: #0D9488; margin-top: 40px; margin-bottom: 15px; font-size: 1.8em;
+            border-bottom: 2px solid #14B8A6; padding-bottom: 10px;
+        }
+        h3 { color: #374151; margin-top: 25px; margin-bottom: 12px; font-size: 1.3em; }
+        p { margin-bottom: 15px; }
+        ol { margin-left: 30px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        .highlight {
+            background: #ecfdf5; border-left: 4px solid #14B8A6;
+            padding: 20px; margin: 20px 0; border-radius: 8px;
+        }
+        .warning {
+            background: #fef3c7; border-left: 4px solid #f59e0b;
+            padding: 20px; margin: 20px 0; border-radius: 8px;
+        }
+        .back-link {
+            display: inline-block; color: #14B8A6; text-decoration: none;
+            margin-bottom: 20px; font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        footer {
+            background: #f9fafb; padding: 30px; text-align: center;
+            color: #6b7280; border-top: 1px solid #e5e7eb;
+        }
+        @media (max-width: 768px) {
+            header h1 { font-size: 2em; }
+            .content { padding: 30px 20px; }
+            h2 { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗑️ Data Deletion</h1>
+            <p>How to delete your health data from EmberMate</p>
+        </header>
+
+        <div class="content">
+            <a href="https://ysorallc.org/privacy" class="back-link">← Back to Privacy Policy</a>
+
+            <div class="highlight">
+                <strong>EmberMate stores all data locally on your device.</strong> There is no server-side data to delete. You have full control over your data at all times.
+            </div>
+
+            <h2>Delete All Data From the App</h2>
+            <p>To permanently delete all your health data from EmberMate:</p>
+            <ol>
+                <li>Open <strong>EmberMate</strong> on your device</li>
+                <li>Go to <strong>Settings</strong> (gear icon)</li>
+                <li>Tap <strong>Data &amp; Privacy</strong></li>
+                <li>Scroll to <strong>Delete My Data</strong></li>
+                <li>Tap <strong>Delete All My Data</strong></li>
+                <li>Confirm deletion when prompted (requires two confirmations for safety)</li>
+            </ol>
+
+            <div class="warning">
+                <strong>This action is permanent and cannot be undone.</strong> We recommend exporting your data first using the Export feature in Data &amp; Privacy settings.
+            </div>
+
+            <h2>What Gets Deleted</h2>
+            <p>Deleting your data removes all of the following from your device:</p>
+            <ol>
+                <li>Medications, dosages, and medication logs</li>
+                <li>Appointments and calendar entries</li>
+                <li>Vital signs, symptoms, and mood logs</li>
+                <li>Care plans and care team information</li>
+                <li>Notes, photos, and journal entries</li>
+                <li>All app preferences and settings</li>
+            </ol>
+
+            <h2>What Is NOT Affected</h2>
+            <p>Since EmberMate does not store data on external servers, there is no server-side data to delete. Specifically:</p>
+            <ol>
+                <li>No cloud accounts to close</li>
+                <li>No server databases to purge</li>
+                <li>No third-party services holding your data</li>
+            </ol>
+            <p>Crash reports sent via Sentry (if enabled) contain no personally identifiable health information and are automatically purged after 90 days.</p>
+
+            <h2>Uninstalling the App</h2>
+            <p>Uninstalling EmberMate from your device also removes all stored data, as everything is kept in the app's local storage. No residual data remains on your device after uninstallation.</p>
+
+            <h2>Need Help?</h2>
+            <p>If you have questions about data deletion or need assistance, contact us at <a href="mailto:support@ysorallc.com">support@ysorallc.com</a>.</p>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 YSORA LLC. All rights reserved.</p>
+            <p style="margin-top: 10px;">
+                <a href="https://ysorallc.org/privacy" style="color: #14B8A6;">Privacy Policy</a> &middot;
+                <a href="https://ysorallc.org/terms" style="color: #14B8A6;">Terms of Service</a> &middot;
+                <a href="https://ysorallc.org/support" style="color: #14B8A6;">Support</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

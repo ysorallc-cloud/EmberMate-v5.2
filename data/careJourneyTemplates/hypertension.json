@@ -1,0 +1,76 @@
+{
+  "id": "hypertension",
+  "name": "Hypertension Management",
+  "description": "A guided care journey for managing high blood pressure",
+  "disclaimer": "General education, not diagnosis. Your provider's instructions take priority.",
+  "milestones": [
+    {
+      "weekRange": [0, 1],
+      "title": "Getting Started",
+      "items": [
+        "Set up daily blood pressure tracking (morning and evening)",
+        "Log all current medications with dosages",
+        "Record your baseline readings for 3 consecutive days",
+        "Note any symptoms: headaches, dizziness, fatigue"
+      ],
+      "nudgeCondition": "no_vitals_logged",
+      "nudgeText": "Start tracking your blood pressure to establish a baseline."
+    },
+    {
+      "weekRange": [2, 3],
+      "title": "Building the Routine",
+      "items": [
+        "Check BP at the same times each day for consistency",
+        "Track sodium intake — aim for under 2,300mg/day",
+        "Begin or maintain 30 min of light activity most days",
+        "Note how medications make you feel (side effects)"
+      ],
+      "nudgeCondition": "low_adherence",
+      "nudgeText": "Consistent tracking helps your provider adjust your care plan."
+    },
+    {
+      "weekRange": [4, 5],
+      "title": "First Check-In Window",
+      "items": [
+        "Review your 4-week trend — is BP trending down?",
+        "Prepare questions for your provider using Visit Prep",
+        "Share your logged data at your follow-up appointment",
+        "Discuss any side effects or concerns"
+      ],
+      "nudgeCondition": "no_upcoming_appointment",
+      "nudgeText": "Consider scheduling a follow-up to review your first month of data."
+    },
+    {
+      "weekRange": [6, 8],
+      "title": "Adjusting & Optimizing",
+      "items": [
+        "Your provider may adjust medication based on your data",
+        "Continue daily tracking to measure the effect of changes",
+        "Monitor for new symptoms after any medication adjustment",
+        "Start noting correlations: sleep quality, stress, and BP"
+      ]
+    },
+    {
+      "weekRange": [9, 12],
+      "title": "Establishing Your Baseline",
+      "items": [
+        "Your readings should be stabilizing in a consistent range",
+        "Identify your personal patterns (time of day, stress triggers)",
+        "Reduce measurement frequency if provider agrees (e.g., once daily)",
+        "Continue medication adherence tracking"
+      ],
+      "nudgeCondition": "no_upcoming_appointment",
+      "nudgeText": "A 3-month follow-up helps confirm your treatment plan is working."
+    },
+    {
+      "weekRange": [13, 26],
+      "title": "Ongoing Management",
+      "items": [
+        "Monthly BP check-ins to catch any drift",
+        "Track lifestyle factors that affect your readings",
+        "Annual comprehensive review with your provider",
+        "Share your long-term trends using the Care Report"
+      ]
+    }
+  ]
+}
