@@ -62,3 +62,4 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+embermate-c116a055b8fb.json
