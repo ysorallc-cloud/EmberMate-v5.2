@@ -25,11 +25,23 @@ export function InsightCard({ insight, expandable = false }: Props) {
     info: colors.textSecondary,
   }[insight.severity];
 
+  const cardBorderColor = {
+    watch: colors.redBorder,
+    good: colors.greenBorder,
+    info: colors.accentBorder,
+  }[insight.severity];
+
+  const cardBg = {
+    watch: colors.redLight,
+    good: colors.greenLight,
+    info: colors.accentDim,
+  }[insight.severity];
+
   const Wrapper = expandable ? TouchableOpacity : View;
 
   return (
     <Wrapper
-      style={styles.card}
+      style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorderColor, borderLeftColor: cardBorderColor }]}
       {...(expandable ? { onPress: () => setExpanded(!expanded) } : {})}
       accessibilityRole={expandable ? 'button' : undefined}
     >
@@ -55,10 +67,9 @@ export function InsightCard({ insight, expandable = false }: Props) {
 
 const createStyles = (c: typeof Colors) => StyleSheet.create({
   card: {
-    backgroundColor: c.cardBackground,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: c.glassBorder,
+    borderLeftWidth: 3,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
   },

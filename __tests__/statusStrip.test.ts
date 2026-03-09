@@ -12,7 +12,6 @@ describe('Progress Rings (restored)', () => {
   test('uses card grid layout with cells', () => {
     expect(content).toContain('cellFrac');
     expect(content).toContain('cellIcon');
-    expect(content).toContain('cellLabel');
   });
 
   test('today screen has Progress section header with Care Plan link', () => {

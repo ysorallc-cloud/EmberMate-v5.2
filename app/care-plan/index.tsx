@@ -35,27 +35,29 @@ import { TemplateMedSeedingModal } from '../../components/careplan/TemplateMedSe
 import { AddItemSheet } from '../../components/careplan/AddItemSheet';
 
 // ============================================================================
-// SECTION HEADER ROW
+// SECTION LABEL — 9px uppercase
 // ============================================================================
 
-function SectionHeaderRow({ title, action, onAction }: {
-  title: string;
-  action?: string;
-  onAction?: () => void;
-}) {
+function SectionLabel({ title }: { title: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
-    <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionHeaderTitle}>{title}</Text>
-      {action && onAction && (
-        <TouchableOpacity onPress={onAction} activeOpacity={0.7}>
-          <Text style={styles.sectionHeaderAction}>{action} {'\u2192'}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+    <Text style={styles.sectionLabel}>{title}</Text>
   );
 }
+
+// Bucket → color mapping for icon tiles
+const BUCKET_COLOR_MAP: Record<BucketType, string> = {
+  meds: '#60A5FA',
+  vitals: '#34D399',
+  meals: '#FB923C',
+  water: '#67E8F9',
+  sleep: '#A78BFA',
+  activity: '#FBBF24',
+  wellness: '#F87171',
+  appointments: '#93C5FD',
+  custom: '#C4B5FD',
+};
 
 // ============================================================================
 // CATEGORY ROW — replaces BucketCard
@@ -74,6 +76,7 @@ interface CategoryRowProps {
 function CategoryRow({ bucket, emoji, name, detail, enabled, onToggle, onPress }: CategoryRowProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const tileColor = BUCKET_COLOR_MAP[bucket] || colors.accent;
   return (
     <TouchableOpacity
       style={[styles.categoryRow, !enabled && styles.categoryRowDisabled]}
@@ -82,15 +85,16 @@ function CategoryRow({ bucket, emoji, name, detail, enabled, onToggle, onPress }
       accessibilityLabel={`${name}, ${enabled ? 'enabled' : 'disabled'}. ${enabled ? 'Tap to configure.' : 'Toggle to enable.'}`}
       accessibilityRole="button"
     >
-      {/* Left: emoji + text */}
-      <View style={styles.categoryLeft}>
+      {/* Icon tile */}
+      <View style={[styles.categoryIconTile, { backgroundColor: tileColor + '22' }]}>
         <Text style={styles.categoryEmoji}>{emoji}</Text>
-        <View style={styles.categoryInfo}>
-          <Text style={styles.categoryName}>{name}</Text>
-          {enabled && detail && <Text style={styles.categoryDetail}>{detail}</Text>}
-        </View>
       </View>
-      {/* Right: toggle + chevron — fixed width column */}
+      {/* Text */}
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryName}>{name}</Text>
+        {enabled && detail && <Text style={styles.categoryDetail}>{detail}</Text>}
+      </View>
+      {/* Right: toggle + chevron */}
       <View style={styles.categoryRight}>
         <Switch
           value={enabled}
@@ -99,10 +103,8 @@ function CategoryRow({ bucket, emoji, name, detail, enabled, onToggle, onPress }
           thumbColor={enabled ? colors.textPrimary : colors.switchThumbOff}
           ios_backgroundColor={colors.glassStrong}
         />
-        {enabled ? (
+        {enabled && (
           <Text style={styles.categoryChevron}>{'\u203A'}</Text>
-        ) : (
-          <View style={styles.categoryChevronSpacer} />
         )}
       </View>
     </TouchableOpacity>
@@ -431,24 +433,38 @@ export default function CarePlanHomeScreen() {
             />
           )}
 
-          {/* ═══ CATEGORIES — single flat list ═══ */}
-          <SectionHeaderRow title={"Categories"} />
+          {/* ═══ PROGRESS HERO ═══ */}
+          <LinearGradient
+            colors={[colors.heroGradStart, colors.heroGradMid, colors.heroGradEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.progressHero}
+          >
+            <View style={styles.progressHeroOrb} />
+            <Text style={styles.progressHeroNumber}>{enabledBuckets.length}</Text>
+            <Text style={styles.progressHeroDenom}>/{allBuckets.length} categories enabled</Text>
+          </LinearGradient>
 
-          {allBuckets.map(bucket => {
-            const isEnabled = enabledBucketSet.has(bucket);
-            return (
-              <CategoryRow
-                key={bucket}
-                bucket={bucket}
-                emoji={BUCKET_META[bucket].emoji}
-                name={BUCKET_META[bucket].name}
-                detail={isEnabled ? getBucketStatus(bucket) : null}
-                enabled={isEnabled}
-                onToggle={(val) => handleToggleBucket(bucket, val)}
-                onPress={() => handleConfigureBucket(bucket)}
-              />
-            );
-          })}
+          {/* ═══ CATEGORIES ═══ */}
+          <SectionLabel title="CATEGORIES" />
+
+          <View style={styles.categoryList}>
+            {allBuckets.map(bucket => {
+              const isEnabled = enabledBucketSet.has(bucket);
+              return (
+                <CategoryRow
+                  key={bucket}
+                  bucket={bucket}
+                  emoji={BUCKET_META[bucket].emoji}
+                  name={BUCKET_META[bucket].name}
+                  detail={isEnabled ? getBucketStatus(bucket) : null}
+                  enabled={isEnabled}
+                  onToggle={(val) => handleToggleBucket(bucket, val)}
+                  onPress={() => handleConfigureBucket(bucket)}
+                />
+              );
+            })}
+          </View>
 
           {/* Bottom spacing */}
           <View style={{ height: 40 }} />
@@ -536,54 +552,82 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // Section Header Row
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  // Section Label
+  sectionLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: c.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 2.5,
     paddingTop: 20,
     paddingBottom: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
-    marginTop: 8,
   },
-  sectionHeaderTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: c.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
+
+  // Progress Hero
+  progressHero: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 4,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: c.accentBorder,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
+    position: 'relative',
   },
-  sectionHeaderAction: {
-    fontSize: 12,
-    fontWeight: '500',
+  progressHeroOrb: {
+    position: 'absolute',
+    right: -20,
+    top: -20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: c.accent,
+    opacity: 0.12,
+  },
+  progressHeroNumber: {
+    fontSize: 52,
+    fontWeight: '700',
     color: c.accent,
+    letterSpacing: -2,
+    lineHeight: 52,
+  },
+  progressHeroDenom: {
+    fontSize: 18,
+    color: c.textMuted,
+    marginBottom: 6,
+  },
+
+  // Category List
+  categoryList: {
+    gap: 4,
   },
 
   // Category Row
   categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.025)',
+    gap: 12,
+    padding: 12,
+    paddingHorizontal: 14,
+    backgroundColor: c.glass,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
   },
   categoryRowDisabled: {
-    opacity: 0.45,
+    opacity: 0.5,
   },
-  categoryLeft: {
-    flex: 1,
-    flexDirection: 'row',
+  categoryIconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
-    minWidth: 0,
-    gap: 12,
-    paddingRight: 12,
+    justifyContent: 'center',
   },
   categoryEmoji: {
-    fontSize: 22,
-    width: 32,
-    textAlign: 'center',
-    flexShrink: 0,
+    fontSize: 18,
   },
   categoryInfo: {
     flex: 1,
@@ -602,19 +646,11 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   categoryRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    flexShrink: 0,
-    width: 72,
     gap: 8,
   },
   categoryChevron: {
     fontSize: 20,
     color: c.textMuted,
-    width: 16,
-    textAlign: 'center',
-  },
-  categoryChevronSpacer: {
-    width: 16,
   },
 
   // AI Insight Card

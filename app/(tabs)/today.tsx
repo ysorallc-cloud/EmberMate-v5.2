@@ -189,6 +189,123 @@ function SectionHeaderRow({
 // INLINE COMPONENT — Insight banner (amber left border, dismissable)
 // ============================================================================
 
+// ============================================================================
+// INLINE COMPONENT — Care Status Banner (Phase 2)
+// ============================================================================
+
+function CareStatusBanner({
+  status,
+  activeTab,
+  onTabPress,
+  styles: s,
+  colors: c,
+}: {
+  status: 'stable' | 'watch' | 'attention';
+  activeTab: 'stable' | 'watch' | 'attention';
+  onTabPress: (tab: 'stable' | 'watch' | 'attention') => void;
+  styles: any;
+  colors: typeof Colors;
+}) {
+  const config = {
+    stable:    { label: 'Care Status: Stable',          color: c.green,   bg: c.greenTint,    border: c.greenBorder,  icon: '\u2713' },
+    watch:     { label: 'Care Status: Watch',            color: c.amber,   bg: c.amberLight,   border: c.amberBorder,  icon: '\u25D0' },
+    attention: { label: 'Care Status: Needs Attention',  color: c.redBright, bg: c.redLight,   border: c.redBorder,    icon: '!' },
+  }[status];
+
+  const sub = {
+    stable:    'No missed critical medications \u00B7 Vitals within expected range',
+    watch:     'Some items need attention \u2014 tap Watch below',
+    attention: 'Urgent items require action now',
+  }[status];
+
+  return (
+    <View>
+      {/* Banner */}
+      <View style={[s.careStatusBanner, { backgroundColor: config.bg, borderColor: config.border }]}>
+        <View style={[s.careStatusIcon, { backgroundColor: config.color + '33', borderColor: config.border }]}>
+          <Text style={[s.careStatusIconText, { color: config.color }]}>{config.icon}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.careStatusLabel, { color: config.color }]}>{config.label}</Text>
+          <Text style={s.careStatusSub}>{sub}</Text>
+        </View>
+      </View>
+
+      {/* Tabs */}
+      <View style={[s.careStatusTabs, { borderColor: config.border }]}>
+        {(['stable', 'watch', 'attention'] as const).map((tab, i) => {
+          const tabColor = { stable: c.green, watch: c.amber, attention: c.redBright }[tab];
+          const active = activeTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                s.careStatusTab,
+                i < 2 && s.careStatusTabBorder,
+                active && { backgroundColor: tabColor + '22' },
+              ]}
+              onPress={() => onTabPress(tab)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${tab} status tab`}
+            >
+              <Text style={[s.careStatusTabText, { color: active ? tabColor : c.textMuted }]}>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Text>
+              {active && (
+                <View style={[s.careStatusTabBar, { backgroundColor: tabColor }]} />
+              )}
+              {!active && tab !== 'stable' && (
+                <View style={[s.careStatusTabDot, { backgroundColor: tabColor, opacity: 0.5 }]} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// ============================================================================
+// INLINE COMPONENT — Watch Section (items needing attention)
+// ============================================================================
+
+function WatchSection({
+  items,
+  status,
+  styles: s,
+  colors: c,
+}: {
+  items: { icon: string; label: string; detail: string; type: 'overdue' | 'vitals' }[];
+  status: 'watch' | 'attention';
+  styles: any;
+  colors: typeof Colors;
+}) {
+  const borderColor = status === 'attention' ? c.redBorder : c.amberBorder;
+  const headerColor = status === 'attention' ? c.redBright : c.amber;
+
+  return (
+    <View style={[s.watchSection, { borderColor }]}>
+      <Text style={[s.watchSectionHeader, { color: headerColor }]}>
+        {status === 'attention' ? 'Needs Attention' : 'Items to Watch'}
+      </Text>
+      {items.map((item, i) => (
+        <View key={i} style={[s.watchRow, i < items.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}>
+          <Text style={s.watchIcon}>{item.icon}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.watchLabel}>{item.label}</Text>
+            <Text style={s.watchDetail}>{item.detail}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ============================================================================
+// INLINE COMPONENT — Insight banner (amber left border, dismissable)
+// ============================================================================
+
 function InsightBanner({
   icon,
   message,
@@ -422,6 +539,85 @@ export default function NowScreen() {
 
     return { overdue, upcoming, completed, nextUp };
   }, [instancesState?.instances, instancesState?.date, today]);
+
+  // ============================================================================
+  // CARE STATUS — derived from overdue items and vitals exceedances
+  // ============================================================================
+  const careStatus = useMemo((): 'stable' | 'watch' | 'attention' => {
+    const hasCriticalOverdue = todayTimeline.overdue.some(
+      i => isClinicalCritical(i.itemType)
+    );
+    const hasVitalsAlert = vitalsExceedances.length > 0;
+    const noVitalsToday = !brief?.vitals?.recorded && new Date().getHours() >= 10;
+
+    if (hasCriticalOverdue || (noVitalsToday && todayTimeline.overdue.length >= 2)) {
+      return 'attention';
+    }
+    if (todayTimeline.overdue.length > 0 || hasVitalsAlert) {
+      return 'watch';
+    }
+    return 'stable';
+  }, [todayTimeline.overdue, vitalsExceedances, brief]);
+
+  // Status tab state + scroll-to-watch behavior
+  const [activeStatusTab, setActiveStatusTab] = useState<'stable' | 'watch' | 'attention'>('stable');
+  const watchSectionRef = useRef<View>(null);
+
+  // Sync tab with computed status on data load
+  useEffect(() => {
+    setActiveStatusTab(careStatus);
+  }, [careStatus]);
+
+  const handleStatusTabPress = useCallback((tab: 'stable' | 'watch' | 'attention') => {
+    setActiveStatusTab(tab);
+    if (tab !== 'stable' && scrollViewRef.current) {
+      setTimeout(() => {
+        watchSectionRef.current?.measureLayout(
+          scrollViewRef.current as any,
+          (_, y) => scrollViewRef.current?.scrollTo({ y: y - 16, animated: true }),
+          () => {}
+        );
+      }, 80);
+    }
+  }, []);
+
+  // Watch items — overdue instances + vitals exceedances
+  const watchItems = useMemo(() => {
+    const items: { icon: string; label: string; detail: string; type: 'overdue' | 'vitals' }[] = [];
+
+    for (const inst of todayTimeline.overdue) {
+      const typeIcon: Record<string, string> = {
+        medication: '\uD83D\uDC8A', vitals: '\uD83E\uDE7A', nutrition: '\uD83C\uDF7D\uFE0F',
+        wellness: '\uD83E\uDDD8', activity: '\uD83C\uDFC3', sleep: '\uD83D\uDE34',
+      };
+      items.push({
+        icon: typeIcon[inst.itemType] || '\u26A0\uFE0F',
+        label: inst.title || inst.itemType,
+        detail: `Scheduled ${formatTime(inst.scheduledTime)} \u2014 overdue`,
+        type: 'overdue',
+      });
+    }
+
+    for (const exc of vitalsExceedances) {
+      items.push({
+        icon: '\uD83E\uDE7A',
+        label: exc.type || 'Vitals',
+        detail: exc.message || 'Out of expected range',
+        type: 'vitals',
+      });
+    }
+
+    return items;
+  }, [todayTimeline.overdue, vitalsExceedances]);
+
+  // Completion percentage for hero card
+  const completionPct = useMemo(() => {
+    const done = (todayStats.meds?.completed ?? 0) + (todayStats.vitals?.completed ?? 0) +
+                 (todayStats.meals?.completed ?? 0) + (todayStats.activity?.completed ?? 0);
+    const total = (todayStats.meds?.total ?? 0) + (todayStats.vitals?.total ?? 0) +
+                  (todayStats.meals?.total ?? 0) + (todayStats.activity?.total ?? 0);
+    return total > 0 ? Math.round((done / total) * 100) : 0;
+  }, [todayStats]);
 
   // Merge overdue + upcoming into single allPending array for TimelineSection
   const allPending = useMemo(() => {
@@ -895,6 +1091,15 @@ export default function NowScreen() {
             );
           })()}
 
+          {/* ═══ CARE STATUS BANNER ═══ */}
+          <CareStatusBanner
+            status={careStatus}
+            activeTab={activeStatusTab}
+            onTabPress={handleStatusTabPress}
+            styles={styles}
+            colors={colors}
+          />
+
           {/* ═══ ZONE 1: TODAY'S PROGRESS ═══ */}
           <SectionHeaderRow
             title="Today's Progress"
@@ -911,6 +1116,20 @@ export default function NowScreen() {
             accessibilityRole="summary"
           >
             <View style={styles.heroOrb} pointerEvents="none" />
+            {/* Big completion number */}
+            <View style={styles.heroCompletionRow}>
+              <Text style={styles.heroCompletionNumber}>
+                {(todayStats.meds?.completed ?? 0) + (todayStats.vitals?.completed ?? 0) +
+                 (todayStats.meals?.completed ?? 0) + (todayStats.activity?.completed ?? 0)}
+              </Text>
+              <Text style={styles.heroCompletionDenom}>
+                /{(todayStats.meds?.total ?? 0) + (todayStats.vitals?.total ?? 0) +
+                   (todayStats.meals?.total ?? 0) + (todayStats.activity?.total ?? 0)} items
+              </Text>
+              <View style={styles.heroCompletionPill}>
+                <Text style={styles.heroCompletionPct}>{completionPct}%</Text>
+              </View>
+            </View>
             <ProgressRings
               todayStats={todayStats}
               enabledBuckets={enabledBuckets}
@@ -922,6 +1141,13 @@ export default function NowScreen() {
               patientName={patientName}
             />
           </LinearGradient>
+
+          {/* ═══ WATCH SECTION (scroll target) ═══ */}
+          <View ref={watchSectionRef} collapsable={false}>
+            {activeStatusTab !== 'stable' && watchItems.length > 0 && (
+              <WatchSection items={watchItems} status={activeStatusTab as 'watch' | 'attention'} styles={styles} colors={colors} />
+            )}
+          </View>
 
           {/* ═══ ZONE 2: TODAY'S SCHEDULE ═══ */}
           <SectionHeaderRow
@@ -1290,6 +1516,79 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     borderRadius: 13,
     backgroundColor: c.accentLight,
     overflow: 'hidden' as const,
+  },
+
+  // ── Care Status Banner ──
+  careStatusBanner: {
+    borderRadius: 18, borderWidth: 1, borderBottomWidth: 0,
+    borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
+    padding: 14, flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 12,
+  },
+  careStatusIcon: {
+    width: 36, height: 36, borderRadius: 18, borderWidth: 1,
+    alignItems: 'center' as const, justifyContent: 'center' as const,
+  },
+  careStatusIconText: { fontSize: 16, fontWeight: '700' as const },
+  careStatusLabel: { fontSize: 14, fontWeight: '700' as const, marginBottom: 3 },
+  careStatusSub: { fontSize: 12, color: c.textSecondary, lineHeight: 18 },
+  careStatusTabs: {
+    flexDirection: 'row' as const, borderWidth: 1, borderTopWidth: 0,
+    borderBottomLeftRadius: 18, borderBottomRightRadius: 18,
+    overflow: 'hidden' as const, marginBottom: 14,
+    backgroundColor: c.glass,
+  },
+  careStatusTab: {
+    flex: 1, paddingVertical: 9, alignItems: 'center' as const,
+    justifyContent: 'center' as const, position: 'relative' as const,
+  },
+  careStatusTabBorder: {
+    borderRightWidth: 1, borderRightColor: c.glassBorder,
+  },
+  careStatusTabText: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.3 },
+  careStatusTabBar: {
+    position: 'absolute' as const, bottom: 0, left: '20%' as any, right: '20%' as any,
+    height: 2, borderRadius: 1,
+  },
+  careStatusTabDot: {
+    width: 5, height: 5, borderRadius: 3, marginTop: 3,
+  },
+
+  // ── Watch Section ──
+  watchSection: {
+    borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14,
+    backgroundColor: c.glass,
+  },
+  watchSectionHeader: {
+    fontSize: 11, fontWeight: '700' as const, letterSpacing: 1,
+    textTransform: 'uppercase' as const, marginBottom: 10,
+  },
+  watchRow: {
+    flexDirection: 'row' as const, alignItems: 'center' as const,
+    gap: 10, paddingVertical: 10,
+  },
+  watchIcon: { fontSize: 18 },
+  watchLabel: { fontSize: 14, fontWeight: '600' as const, color: c.textPrimary },
+  watchDetail: { fontSize: 12, color: c.textMuted, marginTop: 2 },
+
+  // ── Hero Completion Row ──
+  heroCompletionRow: {
+    flexDirection: 'row' as const, alignItems: 'flex-end' as const,
+    gap: 4, marginBottom: 16,
+  },
+  heroCompletionNumber: {
+    fontSize: 52, fontWeight: '700' as const, color: c.accent,
+    letterSpacing: -2, lineHeight: 52,
+  },
+  heroCompletionDenom: {
+    fontSize: 18, color: c.textMuted, marginBottom: 6,
+  },
+  heroCompletionPill: {
+    marginLeft: 'auto' as const, paddingHorizontal: 12, paddingVertical: 5,
+    backgroundColor: c.accentDim, borderRadius: 20,
+    borderWidth: 1, borderColor: c.accentBorder,
+  },
+  heroCompletionPct: {
+    fontSize: 11, fontWeight: '700' as const, color: c.accent,
   },
 
   // ── Hero Card (ProgressRings gradient) ──

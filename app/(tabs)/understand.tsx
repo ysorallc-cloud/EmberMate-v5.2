@@ -177,8 +177,8 @@ export default function UnderstandScreen() {
             <View style={styles.insightSections}>
               <InsightSection category="watch" insights={insights.watch} />
               <InsightSection category="improving" insights={insights.improving} />
-              <InsightSection category="missing" insights={insights.missing} />
               <InsightSection category="pattern" insights={insights.patterns} />
+              <InsightSection category="missing" insights={insights.missing} />
 
               {/* Empty state */}
               {insights.watch.length === 0 &&

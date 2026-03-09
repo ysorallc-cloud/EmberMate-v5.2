@@ -612,7 +612,7 @@ export default function SettingsScreen() {
       accessibilityLabel={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
       accessibilityRole="button"
     >
-      <View style={[styles.settingIconWell, { backgroundColor: item.color ?? 'rgba(255,255,255,0.07)' }]}>
+      <View style={[styles.settingIconTile, item.danger && styles.settingIconTileDanger]}>
         <Text style={styles.settingIconEmoji}>{item.icon}</Text>
       </View>
       <View style={styles.settingContent}>
@@ -623,7 +623,7 @@ export default function SettingsScreen() {
           <Text style={styles.settingSubtitle}>{item.subtitle}</Text>
         )}
       </View>
-      <Text style={styles.arrow}>›</Text>
+      <Text style={styles.arrow}>{'\u203A'}</Text>
     </TouchableOpacity>
   );
 
@@ -850,18 +850,21 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
-  settingIcon: {
-    fontSize: 18,
-    marginRight: 12,
-  },
-  settingIconWell: {
+  settingIconTile: {
     width: 34,
     height: 34,
     borderRadius: 10,
+    backgroundColor: c.glassDim,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     marginRight: 12,
     flexShrink: 0,
+  },
+  settingIconTileDanger: {
+    backgroundColor: c.redLight,
+    borderColor: c.redBorder,
   },
   settingIconEmoji: {
     fontSize: 16,
@@ -886,9 +889,10 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   dangerItem: {
     backgroundColor: c.redFaint,
+    borderColor: c.redBorder,
   },
   dangerText: {
-    color: c.error,
+    color: c.red,
   },
 
   // Health Disclaimer

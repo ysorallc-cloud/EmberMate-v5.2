@@ -25,6 +25,79 @@ import { getMedications, deleteMedication, calculateAdherence, Medication, markM
 import { checkInteraction } from '../utils/drugInteractions';
 import { logError } from '../utils/devLog';
 
+// ── Types for grouped multi-dose cards ──
+interface DoseEntry {
+  med: Medication;
+  time: string;
+  status: 'taken' | 'overdue' | 'pending';
+}
+interface MedGroup {
+  name: string;
+  dosage: string;
+  doses: DoseEntry[];
+  adherenceRate: number | null;
+}
+
+function getAdherenceLabel(rate: number, _medName: string, missedWindow?: string): string {
+  if (rate >= 90) return `${rate}% adherence this week \u2014 excellent`;
+  if (rate >= 80) return `${rate}% adherence this week`;
+  if (rate >= 60) return `${rate}% adherence this week${missedWindow ? ` \u2014 often missed ${missedWindow}` : ''}`;
+  return `${rate}% adherence this week \u2014 needs attention`;
+}
+
+function isMedTimeOverdue(timeStr: string): boolean {
+  if (!timeStr) return false;
+  const now = new Date();
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return false;
+  const scheduled = new Date();
+  scheduled.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+  return now.getTime() - scheduled.getTime() > 15 * 60 * 1000; // 15 min grace
+}
+
+function formatDoseTime(timeStr: string): string {
+  if (!timeStr) return 'As needed';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  const hr = parseInt(parts[0]);
+  const min = parts[1];
+  const period = hr >= 12 ? 'PM' : 'AM';
+  return `${hr % 12 || 12}:${min} ${period}`;
+}
+
+function getDoseStatusText(dose: DoseEntry): string {
+  if (dose.status === 'taken') {
+    const takenAt = dose.med.lastTaken
+      ? new Date(dose.med.lastTaken).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : 'earlier';
+    return `Taken ${takenAt}`;
+  }
+  if (dose.status === 'overdue') {
+    const now = new Date();
+    const parts = dose.time.split(':');
+    if (parts.length >= 2) {
+      const scheduled = new Date();
+      scheduled.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+      const diffMin = Math.round((now.getTime() - scheduled.getTime()) / 60000);
+      if (diffMin >= 60) return `Overdue \u00B7 ${Math.round(diffMin / 60)}h ago`;
+      return `Overdue \u00B7 ${diffMin}m ago`;
+    }
+    return 'Overdue';
+  }
+  // pending
+  const now = new Date();
+  const parts = dose.time.split(':');
+  if (parts.length >= 2) {
+    const scheduled = new Date();
+    scheduled.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+    const diffMin = Math.round((scheduled.getTime() - now.getTime()) / 60000);
+    if (diffMin >= 60) return `Due in ${Math.round(diffMin / 60)}h`;
+    if (diffMin > 0) return `Due in ${diffMin} min`;
+    return 'Due now';
+  }
+  return 'Pending';
+}
+
 export default function MedicationsScreen() {
   const router = useRouter();
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -109,6 +182,45 @@ export default function MedicationsScreen() {
     // Return calculated adherence rate, or null if no data
     return adherenceRates[medication.id] || null;
   };
+
+  // Expanded state for multi-dose cards
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = useCallback((key: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  // Group medications by name+dosage for multi-dose cards
+  const groupedMedications = useMemo((): MedGroup[] => {
+    const groups: Record<string, MedGroup> = {};
+    for (const med of medications) {
+      const key = `${med.name.toLowerCase()}-${med.dosage.toLowerCase()}`;
+      if (!groups[key]) {
+        groups[key] = {
+          name: med.name,
+          dosage: med.dosage,
+          doses: [],
+          adherenceRate: adherenceRates[med.id] ?? null,
+        };
+      }
+      const time = med.time || '';
+      groups[key].doses.push({
+        med,
+        time,
+        status: med.taken ? 'taken' : isMedTimeOverdue(time) ? 'overdue' : 'pending',
+      });
+      // Update adherence if we have a rate for any med in the group
+      if (adherenceRates[med.id] != null && groups[key].adherenceRate == null) {
+        groups[key].adherenceRate = adherenceRates[med.id];
+      }
+    }
+    return Object.values(groups);
+  }, [medications, adherenceRates]);
 
   // Separate medications into "due now" and "taken today"
   const { dueMeds, takenMeds, dueCount } = useMemo(() => {
@@ -210,14 +322,10 @@ export default function MedicationsScreen() {
         <SectionList
           style={styles.content}
           sections={(() => {
-            if (loading || medications.length === 0) return [];
-            const sections: { key: string; title: string; data: Medication[] }[] = [];
-            if (dueMeds.length > 0) sections.push({ key: 'due', title: `DUE NOW (${dueMeds.length})`, data: dueMeds });
-            if (takenMeds.length > 0) sections.push({ key: 'taken', title: `TAKEN TODAY (${takenMeds.length})`, data: takenMeds });
-            sections.push({ key: 'all', title: `ALL MEDICATIONS (${medications.length})`, data: medications });
-            return sections;
+            if (loading || groupedMedications.length === 0) return [];
+            return [{ key: 'all', title: `ALL MEDICATIONS (${groupedMedications.length})`, data: groupedMedications }];
           })()}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.name}-${item.dosage}`}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
           }
@@ -227,108 +335,111 @@ export default function MedicationsScreen() {
               <Text style={styles.sectionTitle}>{section.title}</Text>
             </View>
           )}
-          renderItem={({ item: medication, section }) => {
-            if (section.key === 'due') {
-              const times = formatMedicationTimes(medication);
-              const refillStatus = getRefillStatus(medication);
-              return (
-                <View style={styles.medCard}>
+          renderItem={({ item: group }) => {
+            const isMultiDose = group.doses.length > 1;
+            const groupKey = `${group.name}-${group.dosage}`;
+            const isExpanded = expandedGroups.has(groupKey);
+            const allTaken = group.doses.every(d => d.status === 'taken');
+            const hasOverdue = group.doses.some(d => d.status === 'overdue');
+
+            // Accent bar color: green if all taken, red if overdue, blue default
+            const accentColor = allTaken ? colors.green : hasOverdue ? colors.redBright : colors.accent;
+
+            return (
+              <View style={styles.medCard}>
+                {/* Left accent bar */}
+                <View style={[styles.medAccentBar, { backgroundColor: accentColor }]} />
+                <View style={styles.medCardContent}>
+                  {/* Header row */}
                   <TouchableOpacity
-                    style={styles.medHeader}
-                    onPress={() => handleMedicationPress(medication)}
-                    accessibilityLabel={`Edit ${medication.name}, ${medication.dosage}`}
+                    style={styles.medGroupHeader}
+                    onPress={() => isMultiDose ? toggleGroup(groupKey) : handleMedicationPress(group.doses[0].med)}
+                    accessibilityLabel={`${group.name}, ${group.dosage}${isMultiDose ? `, ${group.doses.length} doses today` : ''}`}
                     accessibilityRole="button"
+                    accessibilityState={isMultiDose ? { expanded: isExpanded } : undefined}
                   >
-                    <TouchableOpacity
-                      style={styles.medCheckbox}
-                      onPress={() => handleTakeMedication(medication)}
-                      accessibilityLabel={`Mark ${medication.name} as taken`}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: false }}
-                    >
-                      <View style={styles.checkbox} />
-                    </TouchableOpacity>
-                    <View style={styles.medInfo}>
-                      <Text style={styles.medName}>{medication.name}</Text>
-                      <Text style={styles.medDosage}>{medication.dosage}</Text>
-                      <View style={styles.timeBadges}>
-                        {times.map((time, index) => (
-                          <View
-                            key={index}
-                            style={[styles.timeBadge, index === 0 && styles.timeBadgeNow]}
-                          >
-                            <Text style={[styles.timeBadgeText, index === 0 && styles.timeBadgeTextNow]}>
-                              {time} {index === 0 ? '(NOW)' : ''}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                      {refillStatus.needsRefill && (
-                        <View style={styles.refillWarning}>
-                          <Text style={styles.refillWarningText}>
-                            Refill needed in {refillStatus.daysLeft} days
-                          </Text>
-                        </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.medName, allTaken && styles.medNameTaken]}>{group.name}</Text>
+                      <Text style={styles.medDosage}>
+                        {group.dosage}
+                        {isMultiDose ? ` \u00B7 ${group.doses.length} doses today` : ''}
+                      </Text>
+                      {group.adherenceRate != null && (
+                        <Text style={[
+                          styles.adherenceText,
+                          { color: group.adherenceRate >= 80 ? colors.green : group.adherenceRate >= 60 ? colors.amber : colors.redBright }
+                        ]}>
+                          {getAdherenceLabel(group.adherenceRate, group.name)}
+                        </Text>
                       )}
                     </View>
+                    {isMultiDose && (
+                      <Text style={styles.groupChevron}>{isExpanded ? '\u25BC' : '\u25B6'}</Text>
+                    )}
+                    {!isMultiDose && (
+                      group.doses[0].status === 'taken' ? (
+                        <View style={styles.medCheckboxDone}>
+                          <Text style={styles.checkmarkIcon}>{'\u2713'}</Text>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.doseLogBtn}
+                          onPress={() => handleTakeMedication(group.doses[0].med)}
+                          accessibilityLabel={`Log ${group.name}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.doseLogBtnText}>
+                            {group.doses[0].status === 'overdue' ? 'Log now' : 'Log'}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    )}
                   </TouchableOpacity>
-                </View>
-              );
-            }
 
-            if (section.key === 'taken') {
-              return (
-                <TouchableOpacity
-                  style={[styles.medCard, styles.medCardTaken]}
-                  onPress={() => handleMedicationPress(medication)}
-                  accessibilityLabel={`${medication.name}, ${medication.dosage}, taken`}
-                  accessibilityRole="button"
-                  accessibilityState={{ checked: true }}
-                >
-                  <View style={styles.medHeader}>
-                    <View style={styles.medCheckboxDone}>
-                      <Text style={styles.checkmarkIcon}>✓</Text>
-                    </View>
-                    <View style={styles.medInfo}>
-                      <Text style={[styles.medName, styles.medNameTaken]}>{medication.name}</Text>
-                      <Text style={styles.medDosage}>{medication.dosage}</Text>
-                      <Text style={styles.takenTime}>
-                        Taken at {medication.lastTaken
-                          ? new Date(medication.lastTaken).toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })
-                          : 'earlier'}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            }
+                  {/* Single-dose inline status */}
+                  {!isMultiDose && (
+                    <Text style={styles.singleDoseStatus}>
+                      {formatDoseTime(group.doses[0].time)} \u00B7 {getDoseStatusText(group.doses[0])}
+                    </Text>
+                  )}
 
-            // section.key === 'all'
-            return (
-              <TouchableOpacity
-                style={styles.medCardCompact}
-                onPress={() => handleMedicationPress(medication)}
-                accessibilityLabel={`${medication.name}, ${medication.dosage}, ${medication.timeSlot}${getAdherencePercent(medication) !== null ? `, ${getAdherencePercent(medication)}% adherence` : ''}`}
-                accessibilityRole="button"
-              >
-                <View style={styles.medIconBox}>
-                  <Text style={styles.medIcon}>💊</Text>
+                  {/* Multi-dose expanded rows */}
+                  {isMultiDose && isExpanded && (
+                    <View style={styles.doseRows}>
+                      {group.doses.map((dose, i) => {
+                        const dotColor = dose.status === 'taken' ? colors.green
+                          : dose.status === 'overdue' ? colors.redBright : colors.amber;
+                        return (
+                          <View key={i} style={[styles.doseRow, i < group.doses.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+                            <View style={[styles.doseDot, { backgroundColor: dotColor }]} />
+                            <Text style={styles.doseTime}>{formatDoseTime(dose.time)}</Text>
+                            <Text style={[styles.doseStatusText, { color: dotColor }]}>
+                              {getDoseStatusText(dose)}
+                            </Text>
+                            {dose.status !== 'taken' && (
+                              <TouchableOpacity
+                                style={styles.doseLogBtn}
+                                onPress={() => handleTakeMedication(dose.med)}
+                                accessibilityLabel={`Log ${group.name} ${formatDoseTime(dose.time)} dose`}
+                                accessibilityRole="button"
+                              >
+                                <Text style={styles.doseLogBtnText}>
+                                  {dose.status === 'overdue' ? 'Log now' : 'Log'}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                            {dose.status === 'taken' && (
+                              <View style={styles.doseTakenCheck}>
+                                <Text style={{ fontSize: 12, color: colors.green }}>{'\u2713'}</Text>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
-                <View style={styles.medInfo}>
-                  <Text style={styles.medName}>{medication.name}</Text>
-                  <Text style={styles.medDosage}>{medication.dosage} • {medication.timeSlot}</Text>
-                </View>
-                <View style={styles.adherenceBadge}>
-                  <Text style={styles.adherenceBadgeText}>
-                    {getAdherencePercent(medication) !== null
-                      ? `${getAdherencePercent(medication)}%`
-                      : '—'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              </View>
             );
           }}
           ListHeaderComponent={
@@ -520,14 +631,88 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: '#6ee7b7',
   },
 
-  // MEDICATION CARDS
+  // MEDICATION CARDS — Grouped multi-dose
   medCard: {
-    backgroundColor: c.surfaceAlt,
+    flexDirection: 'row',
+    backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.border,
     borderRadius: 16,
-    padding: 16,
     marginBottom: 12,
+    overflow: 'hidden',
+  },
+  medAccentBar: {
+    width: 4,
+  },
+  medCardContent: {
+    flex: 1,
+    padding: 14,
+  },
+  medGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  groupChevron: {
+    fontSize: 12,
+    color: c.textMuted,
+  },
+  singleDoseStatus: {
+    fontSize: 12,
+    color: c.textMuted,
+    marginTop: 6,
+  },
+  doseRows: {
+    marginTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+    paddingTop: 8,
+  },
+  doseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+  },
+  doseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  doseTime: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: c.textPrimary,
+    width: 72,
+  },
+  doseStatusText: {
+    flex: 1,
+    fontSize: 12,
+  },
+  doseLogBtn: {
+    backgroundColor: c.accentLight,
+    borderWidth: 1,
+    borderColor: c.accentBorder,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  doseLogBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: c.accent,
+  },
+  doseTakenCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: c.greenTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adherenceText: {
+    fontSize: 11,
+    marginTop: 4,
   },
   medCardTaken: {
     opacity: 0.7,
@@ -542,22 +727,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     padding: 14,
     marginBottom: 8,
   },
-  medHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  medCheckbox: {
-    paddingTop: 4,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: c.glassStrong,
-    backgroundColor: c.surfaceElevated,
-  },
   medCheckboxDone: {
     width: 24,
     height: 24,
@@ -565,7 +734,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.success,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
   },
   checkmarkIcon: {
     color: c.textPrimary,

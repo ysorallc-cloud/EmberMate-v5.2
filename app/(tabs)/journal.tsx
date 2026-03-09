@@ -93,6 +93,7 @@ export default function JournalTab() {
   const [dailyReport, setDailyReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
   const [clinicalReport, setClinicalReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [journalTab, setJournalTab] = useState<'story' | 'reflections' | 'visit'>('story');
 
   const loadReport = useCallback(async () => {
     try {
@@ -552,6 +553,23 @@ export default function JournalTab() {
             }
           />
 
+          {/* ─── TAB BAR ─── */}
+          <View style={s.journalTabs}>
+            {(['story', 'reflections', 'visit'] as const).map(tab => (
+              <TouchableOpacity
+                key={tab}
+                style={[s.journalTab, journalTab === tab && s.journalTabActive]}
+                onPress={() => setJournalTab(tab)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: journalTab === tab }}
+              >
+                <Text style={[s.journalTabText, journalTab === tab && s.journalTabTextActive]}>
+                  {tab === 'story' ? "Today's Story" : tab === 'reflections' ? 'Reflections' : 'Visit Prep'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {/* ─── SAMPLE DATA INDICATOR ─── */}
           {isSampleMode && (
             <View style={s.sampleIndicator}>
@@ -593,35 +611,45 @@ export default function JournalTab() {
             </TouchableOpacity>
           )}
 
-          {/* ═══ SECTION 1: TODAY'S STORY ═══ */}
-          <Text style={s.narrativeText}>
-            {brief
-              ? generateEnhancedNarrative(brief, {
-                  medsDone, medsTotal, mealsDone, mealsTotal,
-                  waterGlasses, wellnessDone, wellnessTotal, hasVitals,
-                })
-              : ''}
-          </Text>
+          {/* ═══ TAB: TODAY'S STORY ═══ */}
+          {journalTab === 'story' && (
+            <>
+              {/* Day at a Glance grid */}
+              <View style={s.glanceGrid}>
+                {glanceStats.map(stat => (
+                  <View key={stat.bucket} style={[s.glanceTile, { backgroundColor: stat.color + '18', borderColor: stat.color + '35' }]}>
+                    <Text style={[s.glanceTileValue, { color: stat.color }]}>{stat.value}</Text>
+                    <Text style={s.glanceTileLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
 
-          {/* First-use guidance when nothing logged today */}
-          {medsTotal === 0 && mealsTotal === 0 && waterGlasses === 0 && !hasMorning && !hasEvening && !hasVitals && (
-            <View style={s.firstUseCard}>
-              <Text style={s.firstUseTitle}>Your journal builds as you log</Text>
-              <Text style={s.firstUseText}>
-                Track medications, meals, vitals, or mood from the Now tab and your daily summary will appear here.
+              {/* Narrative text */}
+              <Text style={s.narrativeText}>
+                {brief
+                  ? generateEnhancedNarrative(brief, {
+                      medsDone, medsTotal, mealsDone, mealsTotal,
+                      waterGlasses, wellnessDone, wellnessTotal, hasVitals,
+                    })
+                  : ''}
               </Text>
-            </View>
+
+              {/* First-use guidance when nothing logged today */}
+              {medsTotal === 0 && mealsTotal === 0 && waterGlasses === 0 && !hasMorning && !hasEvening && !hasVitals && (
+                <View style={s.firstUseCard}>
+                  <Text style={s.firstUseTitle}>Your journal builds as you log</Text>
+                  <Text style={s.firstUseText}>
+                    Track medications, meals, vitals, or mood from the Now tab and your daily summary will appear here.
+                  </Text>
+                </View>
+              )}
+            </>
           )}
 
-          <View style={s.divider} />
-
-          {/* ═══ SECTION 2: REFLECTIONS ═══ */}
-          {reflections.length > 0 && (
+          {/* ═══ TAB: REFLECTIONS ═══ */}
+          {journalTab === 'reflections' && (
             <>
-              <View style={s.sectionHeader}>
-                <Text style={s.sectionTitle}>Reflections</Text>
-              </View>
-              {reflections.map((ref) => (
+              {reflections.length > 0 ? reflections.map((ref) => (
                 <View key={ref.id} style={s.reflectionCard}>
                   <View style={s.reflectionHeader}>
                     <Text style={s.reflectionIcon}>{ref.icon}</Text>
@@ -631,26 +659,74 @@ export default function JournalTab() {
                     <Text style={s.reflectionRecommendation}>{ref.recommendation}</Text>
                   )}
                 </View>
-              ))}
-              <View style={s.divider} />
+              )) : (
+                <View style={s.firstUseCard}>
+                  <Text style={s.firstUseTitle}>Reflections appear as you log</Text>
+                  <Text style={s.firstUseText}>
+                    Log medications, meals, and vitals from the Now tab and personalized reflections will appear here.
+                  </Text>
+                </View>
+              )}
             </>
           )}
 
-          {/* ═══ SECTION 3: VISIT PREP ═══ */}
-          <TouchableOpacity
-            style={s.visitPrepCard}
-            onPress={() => navigate('/provider-prep')}
-            activeOpacity={0.7}
-            accessibilityLabel="Prepare for your next provider visit"
-            accessibilityRole="button"
-          >
-            <Text style={s.visitPrepIcon}>{'\uD83D\uDCCB'}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={s.visitPrepTitle}>Visit Prep</Text>
-              <Text style={s.visitPrepSubtitle}>Prepare for your next provider visit</Text>
-            </View>
-            <Text style={s.visitPrepArrow}>{'\u203A'}</Text>
-          </TouchableOpacity>
+          {/* ═══ TAB: VISIT PREP ═══ */}
+          {journalTab === 'visit' && (
+            <>
+              {/* Upcoming appointment */}
+              {showAppointment && brief?.nextAppointment && (
+                <View style={s.appointmentCard}>
+                  <Text style={s.appointmentIcon}>{'\uD83D\uDCC5'}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.appointmentTitle}>
+                      {brief.nextAppointment.title || 'Upcoming Appointment'}
+                    </Text>
+                    <Text style={s.appointmentDate}>
+                      {daysUntilAppt === 0 ? 'Today' : daysUntilAppt === 1 ? 'Tomorrow' : `In ${daysUntilAppt} days`}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Visit Prep CTA */}
+              <TouchableOpacity
+                style={s.visitPrepCard}
+                onPress={() => navigate('/provider-prep')}
+                activeOpacity={0.7}
+                accessibilityLabel="Prepare for your next provider visit"
+                accessibilityRole="button"
+              >
+                <Text style={s.visitPrepIcon}>{'\uD83D\uDCCB'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.visitPrepTitle}>Visit Prep</Text>
+                  <Text style={s.visitPrepSubtitle}>Prepare for your next provider visit</Text>
+                </View>
+                <Text style={s.visitPrepArrow}>{'\u203A'}</Text>
+              </TouchableOpacity>
+
+              {/* Recent vitals readings */}
+              {hasVitals && brief?.vitals?.readings && (
+                <View style={s.recentReadingsCard}>
+                  <Text style={s.recentReadingsTitle}>Recent Readings</Text>
+                  {brief.vitals.readings.systolic != null && (
+                    <Text style={s.recentReadingRow}>
+                      Blood Pressure: {brief.vitals.readings.systolic}/{brief.vitals.readings.diastolic} mmHg
+                    </Text>
+                  )}
+                  {brief.vitals.readings.heartRate != null && (
+                    <Text style={s.recentReadingRow}>
+                      Heart Rate: {brief.vitals.readings.heartRate} bpm
+                    </Text>
+                  )}
+                  {brief.vitals.readings.oxygen != null && (
+                    <Text style={s.recentReadingRow}>
+                      Oxygen: {brief.vitals.readings.oxygen}%
+                    </Text>
+                  )}
+                </View>
+              )}
+            </>
+          )}
 
           {/* ─── TIMESTAMP ─── */}
           {brief && (
@@ -740,6 +816,109 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   authGateSubtitle: { fontSize: 14, color: c.textSecondary, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
   authGateButton: { backgroundColor: c.accent, paddingHorizontal: 32, paddingVertical: 14, borderRadius: BorderRadius.lg },
   authGateButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+
+  // ─── JOURNAL TABS ───
+  journalTabs: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  journalTab: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: c.glassDim,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+  },
+  journalTabActive: {
+    backgroundColor: c.accentDim,
+    borderColor: c.accentBorder,
+  },
+  journalTabText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: c.textMuted,
+  },
+  journalTabTextActive: {
+    color: c.accent,
+  },
+
+  // ─── DAY AT A GLANCE GRID ───
+  glanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  glanceTile: {
+    width: '30%' as any,
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  glanceTileValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  glanceTileLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: c.textMuted,
+    textTransform: 'uppercase',
+    marginTop: 5,
+  },
+
+  // ─── APPOINTMENT CARD ───
+  appointmentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: c.glass,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    gap: 12,
+  },
+  appointmentIcon: {
+    fontSize: 24,
+  },
+  appointmentTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: c.textPrimary,
+  },
+  appointmentDate: {
+    fontSize: 12,
+    color: c.textSecondary,
+    marginTop: 2,
+  },
+
+  // ─── RECENT READINGS ───
+  recentReadingsCard: {
+    backgroundColor: c.glass,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  recentReadingsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: c.textPrimary,
+    marginBottom: 8,
+  },
+  recentReadingRow: {
+    fontSize: 13,
+    color: c.textSecondary,
+    lineHeight: 22,
+  },
 
   // ─── SAMPLE DATA INDICATOR ───
   sampleIndicator: {

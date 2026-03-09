@@ -101,8 +101,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.glassBorder,
     borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
     alignItems: 'center',
   },
   cellInactive: {
@@ -123,7 +123,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   cellIcon: {
     fontSize: 14,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   cellLabel: {
     fontSize: 9,
@@ -249,7 +249,6 @@ export function ProgressRings({
         accessibilityState={{ selected: isSelected }}
       >
         <Text style={styles.cellIcon}>{item.icon}</Text>
-        <Text style={styles.cellLabel}>{item.label}</Text>
         <Text style={[styles.cellFrac, { color: countColor }]}>
           {stat.total > 0 ? `${stat.completed}/${stat.total}` : '\u2014'}
         </Text>

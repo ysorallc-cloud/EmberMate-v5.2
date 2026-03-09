@@ -26,7 +26,12 @@ export const LightColors = {
 
   // Surfaces — white cards
   surface: '#FFFFFF',
+  raised: '#F8F9FA',
+  raised2: '#F0F1F3',
   surfaceElevated: '#FFFFFF',
+  heroGradStart: '#F5F7FA',
+  heroGradMid: '#EEF1F6',
+  heroGradEnd: '#F5F7FA',
   surfaceAlt: '#F5F3EF',
   surfaceHighlight: 'rgba(74, 107, 93, 0.08)',
 

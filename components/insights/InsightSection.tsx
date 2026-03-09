@@ -21,18 +21,29 @@ interface Props {
   insights: InsightText[];
 }
 
+const SECTION_DOT_COLOR: Record<InsightCategory, (c: typeof Colors) => string> = {
+  watch: (c) => c.redBright,
+  improving: (c) => c.green,
+  pattern: (c) => c.accent,
+  missing: (c) => c.textMuted,
+};
+
 export function InsightSection({ category, insights }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const config = SECTION_CONFIG[category];
+  const dotColor = SECTION_DOT_COLOR[category](colors);
 
   if (insights.length === 0) return null;
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>
-        {config.icon}  {config.title}
-      </Text>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeaderBar, { backgroundColor: dotColor }]} />
+        <Text style={[styles.sectionTitle, { color: dotColor }]}>
+          {config.title.toUpperCase()}
+        </Text>
+      </View>
       {insights.map(insight => (
         <InsightCard
           key={insight.id}
@@ -48,10 +59,20 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   section: {
     marginBottom: Spacing.lg,
   },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: c.textPrimary,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: Spacing.sm,
+  },
+  sectionHeaderBar: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+  },
+  sectionTitle: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 2.5,
   },
 });

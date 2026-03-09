@@ -441,19 +441,12 @@ function TimelineModeBContent({
   const allItems = [...allPending, ...completed];
   const grouped = groupByTimeWindow(allItems);
 
-  // Change 2: Default collapse based on completion status, not time-of-day
+  // Default collapse: morning, afternoon, evening start collapsed; night stays open
   const [collapsedWindows, setCollapsedWindows] = useState<Set<TimeWindow>>(() => {
-    const allWindows: TimeWindow[] = ['morning', 'afternoon', 'evening', 'night'];
+    const defaultCollapsed: TimeWindow[] = ['morning', 'afternoon', 'evening'];
     const windowGroups = groupByTimeWindow([...allPending, ...completed]);
-    return new Set(allWindows.filter(w => {
-      const items = windowGroups[w];
-      if (items.length === 0) return false;
-      // Only collapse when truly done — missed items still need attention
-      const allDone = items.every(i =>
-        i.status === 'completed' || i.status === 'skipped'
-      );
-      return allDone; // collapse completed windows, NOT missed
-    }));
+    // Collapse morning/afternoon/evening if they have items, leave empty windows out
+    return new Set(defaultCollapsed.filter(w => windowGroups[w].length > 0));
   });
 
   const toggleWindow = (window: TimeWindow) => {
