@@ -775,8 +775,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -820,9 +820,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   // ─── JOURNAL TABS ───
   journalTabs: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-    marginTop: 4,
+    gap: 8,
+    marginBottom: 20,
+    marginTop: 8,
   },
   journalTab: {
     paddingVertical: 6,
@@ -848,19 +848,19 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   // ─── DAY AT A GLANCE GRID ───
   glanceGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 18,
   },
   glanceTile: {
-    width: '30%' as any,
+    flex: 1,
+    minWidth: 80,
     borderRadius: 14,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     alignItems: 'center',
   },
   glanceTileValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
@@ -880,9 +880,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
     gap: 12,
   },
   appointmentIcon: {
@@ -904,9 +904,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
   },
   recentReadingsTitle: {
     fontSize: 13,
@@ -939,7 +939,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   journalHeader: {
     borderBottomWidth: 1,
     borderBottomColor: c.glassBorder,
-    marginBottom: 8,
+    marginBottom: 4,
+    paddingHorizontal: 20,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -1074,9 +1075,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: 'rgba(255, 140, 148, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255, 140, 148, 0.2)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
   },
   firstUseTitle: {
     fontSize: 14,
@@ -1093,11 +1094,11 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   // ─── REFLECTIONS ───
   reflectionCard: {
     backgroundColor: c.cardBackground,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    padding: 14,
-    marginBottom: 10,
+    padding: 18,
+    marginBottom: 14,
   },
   reflectionHeader: {
     flexDirection: 'row',
@@ -1128,11 +1129,11 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: c.cardBackground,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    padding: 16,
-    marginBottom: 16,
+    padding: 18,
+    marginBottom: 14,
     gap: 12,
   },
   visitPrepIcon: {

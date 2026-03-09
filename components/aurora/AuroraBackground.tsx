@@ -105,8 +105,8 @@ const AURORA_CONFIGS: Record<AuroraVariant, {
 const LIGHT_AURORA_CONFIGS: Record<AuroraVariant, {
   colors: [string, string, string];
 }> = {
-  today: { colors: ['rgba(13, 148, 136, 0.06)', 'rgba(13, 148, 136, 0.02)', 'transparent'] },
-  now: { colors: ['rgba(13, 148, 136, 0.06)', 'rgba(13, 148, 136, 0.02)', 'transparent'] },
+  today: { colors: ['rgba(96, 165, 250, 0.06)', 'rgba(96, 165, 250, 0.02)', 'transparent'] },
+  now: { colors: ['rgba(96, 165, 250, 0.06)', 'rgba(96, 165, 250, 0.02)', 'transparent'] },
   journal: { colors: ['rgba(124, 58, 237, 0.05)', 'rgba(37, 99, 235, 0.02)', 'transparent'] },
   hub: { colors: ['rgba(79, 70, 229, 0.05)', 'rgba(13, 148, 136, 0.02)', 'transparent'] },
   log: { colors: ['rgba(217, 119, 6, 0.05)', 'rgba(5, 150, 105, 0.02)', 'transparent'] },

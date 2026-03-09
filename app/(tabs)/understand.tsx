@@ -243,8 +243,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // Insight sections
   insightSections: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
 
   // Empty state

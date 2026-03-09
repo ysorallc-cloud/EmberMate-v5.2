@@ -9,9 +9,10 @@ describe('Progress Rings (restored)', () => {
     expect(content).toContain('export function ProgressRings');
   });
 
-  test('uses card grid layout with cells', () => {
-    expect(content).toContain('cellFrac');
-    expect(content).toContain('cellIcon');
+  test('uses circular SVG rings', () => {
+    expect(content).toContain('ringVal');
+    expect(content).toContain('ringLabel');
+    expect(content).toContain('Circle');
   });
 
   test('today screen has Progress section header with Care Plan link', () => {

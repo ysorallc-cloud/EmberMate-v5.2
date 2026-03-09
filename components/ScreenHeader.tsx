@@ -14,12 +14,10 @@ interface ScreenHeaderProps {
 
 const createStyles = (c: typeof Colors) => StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 44,
-    paddingBottom: 16,
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: c.glassBorder,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    marginBottom: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -30,18 +28,17 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '300',
+    fontSize: 28,
+    fontWeight: '700',
     color: c.textPrimary,
-    marginBottom: 0,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: c.textTertiary,
+    fontSize: 13,
+    fontWeight: '500',
+    color: c.textMuted,
     letterSpacing: 0.2,
-    marginTop: 6,
+    marginTop: 4,
   },
   leftAction: {
     marginBottom: 8,

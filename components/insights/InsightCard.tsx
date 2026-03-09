@@ -67,11 +67,11 @@ export function InsightCard({ insight, expandable = false }: Props) {
 
 const createStyles = (c: typeof Colors) => StyleSheet.create({
   card: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: 16,
     borderWidth: 1,
     borderLeftWidth: 3,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    padding: 18,
+    marginBottom: 12,
   },
   header: {
     flexDirection: 'row',

@@ -81,7 +81,6 @@ import { useNowInsights } from '../../hooks/useNowInsights';
 
 // Extracted components
 import { ProgressRings } from '../../components/now/ProgressRings';
-import { ScreenHeader } from '../../components/ScreenHeader';
 // SectionHeader replaced by inline SectionHeaderRow (flat, no icons)
 import { MorningMedsBanner } from '../../components/now/MorningMedsBanner';
 import { TimelineSection } from '../../components/now/TimelineSection';
@@ -119,7 +118,6 @@ interface BeforeBedItem { icon: string; text: string; route: string; }
 import { logError } from '../../utils/devLog';
 import { useDataListener, emitDataUpdate } from '../../lib/events';
 import { EVENT } from '../../lib/eventNames';
-import { GettingStartedChecklist } from '../../components/guidance';
 import { buildCareBrief, CareBrief } from '../../utils/careSummaryBuilder';
 import { hasSampleData } from '../../utils/sampleDataManager';
 import { SampleDataBanner } from '../../components/common/SampleDataBanner';
@@ -199,12 +197,14 @@ function CareStatusBanner({
   onTabPress,
   styles: s,
   colors: c,
+  insightMessage,
 }: {
   status: 'stable' | 'watch' | 'attention';
   activeTab: 'stable' | 'watch' | 'attention';
   onTabPress: (tab: 'stable' | 'watch' | 'attention') => void;
   styles: any;
   colors: typeof Colors;
+  insightMessage?: string | null;
 }) {
   const config = {
     stable:    { label: 'Care Status: Stable',          color: c.green,   bg: c.greenTint,    border: c.greenBorder,  icon: '\u2713' },
@@ -212,11 +212,12 @@ function CareStatusBanner({
     attention: { label: 'Care Status: Needs Attention',  color: c.redBright, bg: c.redLight,   border: c.redBorder,    icon: '!' },
   }[status];
 
-  const sub = {
-    stable:    'No missed critical medications \u00B7 Vitals within expected range',
-    watch:     'Some items need attention \u2014 tap Watch below',
-    attention: 'Urgent items require action now',
-  }[status];
+  const sub = insightMessage
+    ?? {
+        stable:    null,
+        watch:     'Some items need attention below',
+        attention: 'Urgent items require action now',
+       }[status];
 
   return (
     <View>
@@ -227,7 +228,9 @@ function CareStatusBanner({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[s.careStatusLabel, { color: config.color }]}>{config.label}</Text>
-          <Text style={s.careStatusSub}>{sub}</Text>
+          {sub && (
+            <Text style={s.careStatusSub}>{sub}</Text>
+          )}
         </View>
       </View>
 
@@ -298,38 +301,6 @@ function WatchSection({
           </View>
         </View>
       ))}
-    </View>
-  );
-}
-
-// ============================================================================
-// INLINE COMPONENT — Insight banner (amber left border, dismissable)
-// ============================================================================
-
-function InsightBanner({
-  icon,
-  message,
-  onDismiss,
-  styles: s,
-}: {
-  icon: string;
-  message: string;
-  onDismiss: () => void;
-  styles: ReturnType<typeof createStyles>;
-}) {
-  return (
-    <View style={s.insightBanner}>
-      <Text style={s.insightIcon}>{icon}</Text>
-      <Text style={s.insightMessage}>{message}</Text>
-      <TouchableOpacity
-        onPress={onDismiss}
-        style={s.insightDismiss}
-        accessibilityLabel="Dismiss insight"
-        accessibilityRole="button"
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Text style={s.insightDismissText}>{'\u2715'}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -466,16 +437,6 @@ export default function NowScreen() {
   const { insight } = useNowInsights(
     todayStats, instancesState, today, medications, appointments, dailyTracking
   );
-  const [insightDismissed, setInsightDismissed] = useState(false);
-  const [lastInsightMsg, setLastInsightMsg] = useState<string | null>(null);
-
-  // Reset dismiss when insight changes
-  useEffect(() => {
-    if (insight?.message && insight.message !== lastInsightMsg) {
-      setInsightDismissed(false);
-      setLastInsightMsg(insight.message);
-    }
-  }, [insight?.message]);
 
   // ============================================================================
   // TODAY TIMELINE - Built from DailyCareInstances
@@ -560,12 +521,18 @@ export default function NowScreen() {
   }, [todayTimeline.overdue, vitalsExceedances, brief]);
 
   // Status tab state + scroll-to-watch behavior
-  const [activeStatusTab, setActiveStatusTab] = useState<'stable' | 'watch' | 'attention'>('stable');
+  // Initialize directly from careStatus — avoids tab/banner mismatch on first render
+  const [activeStatusTab, setActiveStatusTab] = useState<'stable' | 'watch' | 'attention'>(careStatus);
+  const prevCareStatus = useRef(careStatus);
   const watchSectionRef = useRef<View>(null);
 
-  // Sync tab with computed status on data load
   useEffect(() => {
-    setActiveStatusTab(careStatus);
+    // Only auto-sync if the user hasn't manually overridden
+    // (i.e., only sync when careStatus escalates, not when user taps a tab)
+    if (careStatus !== prevCareStatus.current) {
+      prevCareStatus.current = careStatus;
+      setActiveStatusTab(careStatus);
+    }
   }, [careStatus]);
 
   const handleStatusTabPress = useCallback((tab: 'stable' | 'watch' | 'attention') => {
@@ -912,29 +879,42 @@ export default function NowScreen() {
 
   function buildBeforeBedItems(): BeforeBedItem[] {
     const items: BeforeBedItem[] = [];
+    const seenRoutes = new Set<string>();
 
     if (careTasksState) {
       const eveningTasks = careTasksState.byWindow['evening'] || [];
       const nightTasks = careTasksState.byWindow['night'] || [];
       for (const task of [...eveningTasks, ...nightTasks]) {
         if (task.status === 'pending') {
+          const route = task.primaryAction?.route || '';
+          if (route && seenRoutes.has(route)) continue;
+          if (route) seenRoutes.add(route);
           items.push({
             icon: task.emoji || '\u2705',
             text: task.title,
-            route: task.primaryAction?.route || '',
+            route,
           });
         }
       }
     }
 
     if (brief && !brief.sleep.logged) {
-      const pronoun = patientGender?.toLowerCase() === 'male' ? 'he' : patientGender?.toLowerCase() === 'female' ? 'she' : 'they';
-      items.push({ icon: '\uD83D\uDE34', text: `Log sleep when ${pronoun} go${pronoun === 'they' ? '' : 'es'} to bed`, route: '/log-sleep' });
+      const pronoun = patientGender?.toLowerCase() === 'male' ? 'he'
+        : patientGender?.toLowerCase() === 'female' ? 'she' : 'they';
+      const sleepRoute = '/log-sleep';
+      if (!seenRoutes.has(sleepRoute)) {
+        seenRoutes.add(sleepRoute);
+        items.push({ icon: '\uD83D\uDE34', text: `Log sleep when ${pronoun} go${pronoun === 'they' ? '' : 'es'} to bed`, route: sleepRoute });
+      }
     }
 
     const hasEvening = brief?.mood.eveningWellness != null;
     if (brief && !hasEvening && new Date().getHours() >= 17) {
-      items.push({ icon: '\uD83D\uDCCB', text: 'Evening wellness check', route: '/log-evening-wellness' });
+      const wellnessRoute = '/log-evening-wellness';
+      if (!seenRoutes.has(wellnessRoute)) {
+        seenRoutes.add(wellnessRoute);
+        items.push({ icon: '\uD83D\uDCCB', text: 'Evening wellness check', route: wellnessRoute });
+      }
     }
 
     return items;
@@ -961,33 +941,35 @@ export default function NowScreen() {
           />
         }
       >
-        {/* Header: greeting + date left, patient chip right */}
-        <ScreenHeader
-          title="Today"
-          subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-          purpose="What needs attention today."
-          rightAction={
-            <TouchableOpacity
-              onPress={() => setShowPatientSwitcher(true)}
-              style={[styles.patientChip, isSampleMode && styles.patientChipDemo]}
-              accessibilityLabel={`Patient: ${patientName}${isSampleMode ? ' (demo)' : ''}. Tap to switch.`}
-              accessibilityRole="button"
-            >
-                <View style={styles.patientAvatar}>
-                  <Text style={styles.patientAvatarText}>
-                    {patientName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.patientChipName}>{patientName}</Text>
-                {isSampleMode && (
-                  <Text style={styles.demoBadge}>DEMO</Text>
-                )}
-                {patients.length > 1 && (
-                  <Text style={{ fontSize: 10, color: colors.textMuted }}>{'\u25BC'}</Text>
-                )}
-            </TouchableOpacity>
-          }
-        />
+        {/* Header: personalized greeting + patient chip */}
+        <View style={styles.greetingHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greetingDate}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </Text>
+            <Text style={styles.greetingText}>
+              {getGreeting()},{'\n'}
+              <Text style={styles.greetingName}>{patientName !== 'Patient' ? patientName : 'there'}.</Text>
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setShowPatientSwitcher(true)}
+            style={[styles.patientChip, isSampleMode && styles.patientChipDemo]}
+            accessibilityLabel={`Patient: ${patientName}${isSampleMode ? ' (demo)' : ''}. Tap to switch.`}
+            accessibilityRole="button"
+          >
+            <View style={styles.patientAvatar}>
+              <Text style={styles.patientAvatarText}>
+                {patientName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.patientChipName}>{patientName}</Text>
+            {isSampleMode && <Text style={styles.demoBadge}>DEMO</Text>}
+            {patients.length > 1 && (
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>{'\u25BC'}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
         <PatientSwitcherModal
           visible={showPatientSwitcher}
           onClose={() => setShowPatientSwitcher(false)}
@@ -1053,44 +1035,6 @@ export default function NowScreen() {
 
         <View style={styles.content}>
 
-          {/* ═══ INSIGHT BANNER ═══ */}
-          {insight && !insightDismissed && (
-            <InsightBanner
-              icon={insight.icon}
-              message={insight.message}
-              onDismiss={() => setInsightDismissed(true)}
-              styles={styles}
-            />
-          )}
-
-          {/* ═══ MORNING CONTEXT LINE ═══ */}
-          {allPending.length > 0 && (() => {
-            const hour = new Date().getHours();
-            const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-            const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-
-            const windowPending = allPending.filter((i: any) => {
-              if (timeOfDay === 'morning') return i.windowLabel === 'morning';
-              if (timeOfDay === 'afternoon') return i.windowLabel === 'afternoon';
-              return i.windowLabel === 'evening' || i.windowLabel === 'night';
-            });
-
-            const count = windowPending.length;
-            const suffix = count > 0
-              ? `${count} item${count === 1 ? '' : 's'} for this ${timeOfDay}.`
-              : `You're caught up for the ${timeOfDay}.`;
-
-            return (
-              <Text
-                style={styles.morningContextLine}
-                accessibilityRole="text"
-                accessibilityLabel={`${greeting}. ${suffix}`}
-              >
-                {greeting}. {suffix}
-              </Text>
-            );
-          })()}
-
           {/* ═══ CARE STATUS BANNER ═══ */}
           <CareStatusBanner
             status={careStatus}
@@ -1098,6 +1042,7 @@ export default function NowScreen() {
             onTabPress={handleStatusTabPress}
             styles={styles}
             colors={colors}
+            insightMessage={insight ? insight.message : null}
           />
 
           {/* ═══ ZONE 1: TODAY'S PROGRESS ═══ */}
@@ -1108,7 +1053,7 @@ export default function NowScreen() {
             styles={styles}
           />
           <LinearGradient
-            colors={['#061A12', '#0D2A1F', '#071E14']}
+            colors={[colors.heroGradStart, colors.heroGradMid, colors.heroGradEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroCard}
@@ -1140,6 +1085,27 @@ export default function NowScreen() {
               onManagePress={() => navigate('/care-plan')}
               patientName={patientName}
             />
+            {todayTimeline?.nextUp && (
+              <TouchableOpacity
+                style={styles.nextUpBar}
+                onPress={() => todayTimeline.nextUp && handleTimelineItemPress(todayTimeline.nextUp)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Next: ${todayTimeline.nextUp.title || todayTimeline.nextUp.itemName}`}
+              >
+                <View style={styles.nextUpDot} />
+                <Text style={styles.nextUpText} numberOfLines={1}>
+                  {'Next: '}
+                  <Text style={styles.nextUpName}>
+                    {todayTimeline.nextUp.title || todayTimeline.nextUp.itemName || 'Task'}
+                  </Text>
+                  {todayTimeline.nextUp.scheduledTime
+                    ? ` at ${formatTime(todayTimeline.nextUp.scheduledTime)}`
+                    : ''}
+                </Text>
+                <Text style={styles.nextUpAction}>Log {'\u2192'}</Text>
+              </TouchableOpacity>
+            )}
           </LinearGradient>
 
           {/* ═══ WATCH SECTION (scroll target) ═══ */}
@@ -1383,11 +1349,11 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 16,
+    paddingTop: 24,
   },
   // closureContainer and orientationContainer removed — prompts consolidated into MorningBriefing
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 0,
   },
 
@@ -1407,7 +1373,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     lineHeight: 22,
   },
 
-  // Patient chip (header uses ScreenHeader)
+  // Patient chip
   patientChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1456,12 +1422,31 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 4,
   },
-  morningContextLine: {
-    fontSize: 14,
-    color: c.textSecondary,
+  greetingHeader: {
     paddingHorizontal: 20,
-    paddingBottom: 8,
-    lineHeight: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  greetingDate: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    color: c.textMuted,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  greetingText: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: c.textPrimary,
+    letterSpacing: -0.5,
+    lineHeight: 32,
+  },
+  greetingName: {
+    color: c.accent,
   },
   hiddenBanner: {
     flexDirection: 'row',
@@ -1490,8 +1475,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: 22,
+    paddingBottom: 12,
   },
   sectionHeaderTitle: {
     fontSize: 9,
@@ -1555,7 +1540,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // ── Watch Section ──
   watchSection: {
-    borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14,
+    borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 14,
     backgroundColor: c.glass,
   },
   watchSectionHeader: {
@@ -1591,14 +1576,54 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     fontSize: 11, fontWeight: '700' as const, color: c.accent,
   },
 
+  // ── Next Up Bar ──
+  nextUpBar: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    marginTop: 12,
+    padding: 10,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(0,0,0,0.30)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  nextUpDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: c.accent,
+    shadowColor: c.accent,
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+    flexShrink: 0,
+  },
+  nextUpText: {
+    flex: 1,
+    fontSize: 12,
+    color: c.textSecondary,
+  },
+  nextUpName: {
+    color: c.textPrimary,
+    fontWeight: '600' as const,
+  },
+  nextUpAction: {
+    fontSize: 12,
+    color: c.accent,
+    fontWeight: '600' as const,
+    flexShrink: 0,
+  },
+
   // ── Hero Card (ProgressRings gradient) ──
   heroCard: {
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.15)',
+    borderColor: c.accentBorder,
   },
   heroOrb: {
     position: 'absolute',
@@ -1607,8 +1632,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#34D399',
-    opacity: 0.15,
+    backgroundColor: c.accent,
+    opacity: 0.07,
   },
 
   // ── Section Card wrapper ──
@@ -1616,9 +1641,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
   },
 
   emptyTimeline: {
@@ -1660,39 +1685,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     marginVertical: 16,
     paddingHorizontal: 20,
   },
-  // Insight banner
-  insightBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    borderLeftWidth: 2,
-    borderLeftColor: c.amber ?? '#FBBF24',
-    backgroundColor: 'rgba(245,158,11,0.03)',
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-    padding: 10,
-    paddingRight: 32,
-    marginBottom: 8,
-  },
-  insightIcon: {
-    fontSize: 14,
-  },
-  insightMessage: {
-    flex: 1,
-    fontSize: 12,
-    color: c.textSecondary,
-    lineHeight: 18,
-  },
-  insightDismiss: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  insightDismissText: {
-    fontSize: 12,
-    color: c.textMuted,
-  },
-
   footerSection: {
     alignItems: 'center',
     paddingTop: 20,
