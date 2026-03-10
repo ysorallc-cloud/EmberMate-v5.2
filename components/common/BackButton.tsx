@@ -113,17 +113,17 @@ export function BackButton({
       navigateReplace(fallbackRoute);
     } else {
       // Try to go back, with fallback if needed
+      // On web, router.canGoBack() is unreliable.
+      // Try browser history first, fall back to router, then replace.
       try {
-        // router.back() returns void but may throw or fail silently
-        // We use canGoBack() to check first if available
-        if (router.canGoBack && typeof router.canGoBack === 'function' && router.canGoBack()) {
+        if (typeof window !== 'undefined' && window.history?.length > 1) {
+          router.back();
+        } else if (router.canGoBack && typeof router.canGoBack === 'function' && router.canGoBack()) {
           router.back();
         } else {
-          // Can't go back - use fallback
           navigateReplace(fallbackRoute);
         }
       } catch {
-        // Navigation failed - use fallback
         navigateReplace(fallbackRoute);
       }
     }

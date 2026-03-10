@@ -532,6 +532,23 @@ export async function logInstanceCompletion(
 
   if (!updatedInstance) return null;
 
+  // Sync medication status to legacy storage for backward compatibility
+  // Long-term, Medication.taken should be deprecated in favor of the instance system
+  if (instance.itemType === 'medication' && (outcome === 'taken' || outcome === 'completed')) {
+    try {
+      const { markMedicationTaken, getMedications: getLegacyMeds } = await import('../utils/medicationStorage');
+      const allMeds = await getLegacyMeds(patientId);
+      const matchingMed = allMeds.find(
+        m => m.name.toLowerCase() === (instance.itemName || '').toLowerCase() && m.active
+      );
+      if (matchingMed?.id) {
+        await markMedicationTaken(matchingMed.id, true, undefined, patientId);
+      }
+    } catch {
+      // Non-critical — legacy sync failure should not break instance completion
+    }
+  }
+
   return { instance: updatedInstance, log };
 }
 

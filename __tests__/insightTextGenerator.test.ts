@@ -4,20 +4,21 @@ import {
 } from '../utils/insightTextGenerator';
 import { createDefaultCarePlanConfig } from '../types/carePlanConfig';
 
-// Mock storage modules
-jest.mock('../utils/medicationStorage', () => ({
-  getMedications: jest.fn().mockResolvedValue([
-    { id: '1', name: 'Test Med', active: true },
-  ]),
-  getMedicationLogs: jest.fn().mockResolvedValue([
-    { medicationId: '1', timestamp: new Date().toISOString(), taken: true },
-    { medicationId: '1', timestamp: new Date().toISOString(), taken: true },
-    { medicationId: '1', timestamp: new Date().toISOString(), taken: false },
-    { medicationId: '1', timestamp: new Date().toISOString(), taken: false },
-    { medicationId: '1', timestamp: new Date().toISOString(), taken: false },
-    { medicationId: '1', timestamp: new Date().toISOString(), taken: false },
-  ]),
-}));
+// Mock instance-based storage (replaces legacy medicationStorage mock)
+jest.mock('../storage/carePlanRepo', () => {
+  const d = new Date().toISOString().split('T')[0];
+  return {
+    listDailyInstancesRange: jest.fn().mockResolvedValue([
+      { id: '1', itemType: 'medication', itemName: 'Test Med', status: 'completed', date: d },
+      { id: '2', itemType: 'medication', itemName: 'Test Med', status: 'completed', date: d },
+      { id: '3', itemType: 'medication', itemName: 'Test Med', status: 'pending', date: d },
+      { id: '4', itemType: 'medication', itemName: 'Test Med', status: 'missed', date: d },
+      { id: '5', itemType: 'medication', itemName: 'Test Med', status: 'missed', date: d },
+      { id: '6', itemType: 'medication', itemName: 'Test Med', status: 'missed', date: d },
+    ]),
+    DEFAULT_PATIENT_ID: 'default',
+  };
+});
 
 jest.mock('../utils/vitalsStorage', () => ({
   getVitalsInRange: jest.fn().mockResolvedValue([]),

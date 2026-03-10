@@ -340,9 +340,23 @@ export default function CareReportScreen() {
   // DERIVED DATA
   // ========================================================================
 
-  const activeMeds = medications;
-  const takenCount = activeMeds.filter(m => m.taken).length;
-  const missedMeds = activeMeds.filter(m => !m.taken);
+  // Use CareBrief medication data (same source as Today page and Journal)
+  // Fall back to legacy medicationStorage only if CareBrief is unavailable
+  const briefMeds = careBrief?.medications ?? [];
+  const activeMeds = medications; // Keep for Visit Prep and Full Report (need dosage, schedule info)
+
+  const takenCount = briefMeds.length > 0
+    ? briefMeds.filter(m => m.status === 'completed' || m.status === 'skipped').length
+    : activeMeds.filter(m => m.taken).length;
+
+  const missedMeds = briefMeds.length > 0
+    ? medications.filter(med => {
+        const briefMed = briefMeds.find(b => b.name.toLowerCase() === med.name.toLowerCase());
+        return briefMed ? briefMed.status === 'pending' || briefMed.status === 'missed' : false;
+      })
+    : activeMeds.filter(m => !m.taken);
+
+  const totalScheduledMeds = briefMeds.length > 0 ? briefMeds.length : activeMeds.length;
   const upcomingAppts = appointments.filter(a => {
     const daysUntil = Math.ceil((new Date(a.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysUntil >= 0 && daysUntil <= 7;
@@ -426,6 +440,7 @@ export default function CareReportScreen() {
             medications={activeMeds}
             takenCount={takenCount}
             missedMeds={missedMeds}
+            totalScheduledMeds={totalScheduledMeds}
             appointments={appointments}
             upcomingAppts={upcomingAppts}
             medicalInfo={medicalInfo}
@@ -443,6 +458,7 @@ export default function CareReportScreen() {
             notesLog={notesLog}
             appointments={appointments}
             careActivities={careActivities}
+            careBrief={careBrief}
           />}
 
           {scope === 'visit' && <VisitPrepView
@@ -478,13 +494,14 @@ export default function CareReportScreen() {
 // ============================================================================
 
 function HandoffView({
-  patientName, medications, takenCount, missedMeds, appointments, upcomingAppts,
+  patientName, medications, takenCount, missedMeds, totalScheduledMeds, appointments, upcomingAppts,
   medicalInfo, emergencyContacts, careBrief, watchForItems,
 }: {
   patientName: string;
   medications: Medication[];
   takenCount: number;
   missedMeds: Medication[];
+  totalScheduledMeds: number;
   appointments: Appointment[];
   upcomingAppts: Appointment[];
   medicalInfo: MedicalInfo | null;
@@ -494,7 +511,7 @@ function HandoffView({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const totalMeds = medications.length;
+  const totalMeds = totalScheduledMeds || medications.length;
   const statusLevel = missedMeds.length === 0 ? 'stable'
     : missedMeds.length >= totalMeds * 0.5 ? 'concerning'
     : 'attention';
@@ -635,7 +652,7 @@ function HandoffView({
 // ============================================================================
 
 function TodayView({
-  patientName, caregiverName, medications, vitalsLog, mealsLog, notesLog, appointments, careActivities,
+  patientName, caregiverName, medications, vitalsLog, mealsLog, notesLog, appointments, careActivities, careBrief,
 }: {
   patientName: string;
   caregiverName: string;
@@ -645,10 +662,15 @@ function TodayView({
   notesLog: any;
   appointments: Appointment[];
   careActivities: CareActivity[];
+  careBrief: CareBrief | null;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const takenCount = medications.filter(m => m.taken).length;
+  // Use CareBrief medication status (aligned with Today page)
+  const briefMeds = careBrief?.medications ?? [];
+  const takenCount = briefMeds.length > 0
+    ? briefMeds.filter(m => m.status === 'completed' || m.status === 'skipped').length
+    : medications.filter(m => m.taken).length;
   const mealsLogged = mealsLog?.meals?.length || 0;
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const appointmentsToday = appointments.filter(a => a.date === todayStr).length;
@@ -720,20 +742,30 @@ function TodayView({
       {medications.length > 0 && (
         <GlassCard style={styles.sectionCard}>
           <Text style={styles.sectionLabel}>MEDICATIONS</Text>
-          {medications.map((med, i) => (
-            <View key={med.id || i} style={styles.listItem}>
-              <View style={styles.listItemRow}>
-                <Text style={styles.listItemName}>{med.name}</Text>
-                <Text style={[
-                  styles.listItemStatus,
-                  med.taken ? styles.statusTaken : styles.statusPending,
-                ]}>
-                  {med.taken ? 'Taken' : 'Pending'}
-                </Text>
+          {medications.map((med, i) => {
+            const briefMed = briefMeds.find(b => b.name.toLowerCase() === med.name.toLowerCase());
+            const isTaken = briefMed
+              ? (briefMed.status === 'completed' || briefMed.status === 'skipped')
+              : med.taken;
+            const statusLabel = briefMed
+              ? (briefMed.status === 'completed' ? 'Taken' : briefMed.status === 'skipped' ? 'Skipped' : briefMed.status === 'missed' ? 'Missed' : 'Pending')
+              : (med.taken ? 'Taken' : 'Pending');
+
+            return (
+              <View key={med.id || i} style={styles.listItem}>
+                <View style={styles.listItemRow}>
+                  <Text style={styles.listItemName}>{med.name}</Text>
+                  <Text style={[
+                    styles.listItemStatus,
+                    isTaken ? styles.statusTaken : styles.statusPending,
+                  ]}>
+                    {statusLabel}
+                  </Text>
+                </View>
+                <Text style={styles.listItemDetail}>{med.dosage || 'As directed'}</Text>
               </View>
-              <Text style={styles.listItemDetail}>{med.dosage || 'As directed'}</Text>
-            </View>
-          ))}
+            );
+          })}
         </GlassCard>
       )}
 

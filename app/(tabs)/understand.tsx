@@ -19,7 +19,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigate } from '../../lib/navigate';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, BorderRadius } from '../../theme/theme-tokens';
@@ -29,7 +29,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { TimeRange } from '../../utils/understandInsights';
 import { logError } from '../../utils/devLog';
 import { useDataListener } from '../../lib/events';
-import { generateAllInsights, InsightResults } from '../../utils/insightTextGenerator';
+import { generateAllInsights, InsightResults, computePeriodSummary, PeriodSummary } from '../../utils/insightTextGenerator';
 import { InsightSection } from '../../components/insights/InsightSection';
 import { getOrCreateCarePlanConfig } from '../../storage/carePlanConfigRepo';
 
@@ -96,18 +96,24 @@ const _styles = StyleSheet.create({
 
 export default function UnderstandScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>(14);
   const [insights, setInsights] = useState<InsightResults | null>(null);
+  const [summary, setSummary] = useState<PeriodSummary | null>(null);
 
   const loadInsights = useCallback(async () => {
     try {
       setLoading(true);
       const config = await getOrCreateCarePlanConfig('default');
-      const results = await generateAllInsights(config, timeRange);
+      const [results, periodSummary] = await Promise.all([
+        generateAllInsights(config, timeRange),
+        computePeriodSummary(timeRange),
+      ]);
       setInsights(results);
+      setSummary(periodSummary);
     } catch (err) {
       logError('Insights.loadInsights', err);
     } finally {
@@ -138,10 +144,10 @@ export default function UnderstandScreen() {
     <View style={styles.container}>
       <AuroraBackground variant="hub" />
 
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
@@ -175,6 +181,25 @@ export default function UnderstandScreen() {
             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
           ) : insights ? (
             <View style={styles.insightSections}>
+              {/* Period Summary */}
+              {summary && summary.totalInstances > 0 && (
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryRow}>
+                    <View style={styles.summaryStat}>
+                      <Text style={styles.summaryValue}>{summary.completionRate}%</Text>
+                      <Text style={styles.summaryLabel}>Completed</Text>
+                    </View>
+                    <View style={styles.summaryStat}>
+                      <Text style={styles.summaryValue}>{summary.activeDays}/{summary.totalDays}</Text>
+                      <Text style={styles.summaryLabel}>Active days</Text>
+                    </View>
+                    <View style={styles.summaryStat}>
+                      <Text style={styles.summaryValue}>{summary.totalInstances}</Text>
+                      <Text style={styles.summaryLabel}>Tasks logged</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
               <InsightSection category="watch" insights={insights.watch} />
               <InsightSection category="improving" insights={insights.improving} />
               <InsightSection category="pattern" insights={insights.patterns} />
@@ -202,7 +227,7 @@ export default function UnderstandScreen() {
 
           <View style={{ height: 100 }} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -239,6 +264,33 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   settingsGearText: {
     fontSize: 20,
+  },
+
+  // Period summary
+  summaryCard: {
+    backgroundColor: c.glass,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+    padding: 18,
+    marginBottom: 20,
+  },
+  summaryRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+  },
+  summaryStat: {
+    alignItems: 'center' as const,
+  },
+  summaryValue: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: c.textPrimary,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: c.textMuted,
+    marginTop: 4,
   },
 
   // Insight sections

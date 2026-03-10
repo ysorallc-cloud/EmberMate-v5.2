@@ -25,7 +25,7 @@ export function InsightSection({ category, insights }: Props) {
   if (insights.length === 0) return null;
 
   const config = SECTION_CONFIG[category];
-  const defaultExpanded = category === 'watch';
+  const defaultExpanded = category === 'watch' || insights.length <= 2;
 
   return (
     <View style={styles.section}>

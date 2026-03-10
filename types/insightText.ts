@@ -11,4 +11,7 @@ export interface InsightText {
   severity: InsightSeverity;
   relatedTypes?: string[];
   dateRange?: { start: string; end: string };
+  whyItMatters?: string;
+  pattern?: string;
+  actions?: { label: string; icon: string; route?: string }[];
 }

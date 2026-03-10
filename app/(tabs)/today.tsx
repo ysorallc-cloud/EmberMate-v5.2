@@ -41,7 +41,7 @@ import {
 
 // Aurora Components
 import { AuroraBackground } from '../../components/aurora/AuroraBackground';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PatientSwitcherModal } from '../../components/now/PatientSwitcherModal';
 import { usePatient } from '../../contexts/PatientContext';
 // CarePlan System
@@ -244,6 +244,7 @@ function CareStatusBanner({
 
 export default function NowScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Track today's date
@@ -816,11 +817,11 @@ export default function NowScreen() {
     <View style={styles.container}>
       <AuroraBackground variant="now" />
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      <View style={{ flex: 1 }}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -1200,7 +1201,7 @@ export default function NowScreen() {
         {/* Bottom spacing for tab bar */}
         <View style={{ height: 83 }} />
       </ScrollView>
-      </SafeAreaView>
+      </View>
 
       {/* Routine Sheet — batch logging for a time window */}
       {activeRoutineWindow && (
@@ -1234,7 +1235,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 24,
+    paddingTop: 8,
   },
   // closureContainer and orientationContainer removed — prompts consolidated into MorningBriefing
   content: {
@@ -1309,7 +1310,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   greetingHeader: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',

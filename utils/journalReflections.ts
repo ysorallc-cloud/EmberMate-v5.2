@@ -220,63 +220,62 @@ export function generateEnhancedNarrative(
     wellnessDone: number;
     wellnessTotal: number;
     hasVitals: boolean;
+    patientName?: string;
   }
 ): string {
   const parts: string[] = [];
-  const now = new Date();
-  const hour = now.getHours();
+  const name = opts.patientName || 'Your patient';
 
-  // Time-of-day greeting
-  if (hour < 12) {
-    parts.push('This morning:');
-  } else if (hour < 17) {
-    parts.push('So far today:');
-  } else {
-    parts.push("Today's summary:");
+  // Lead with what went well — vitals, completed meds
+  if (opts.hasVitals && brief.vitals?.readings) {
+    const r = brief.vitals.readings;
+    const vitalsDetails: string[] = [];
+    if (r.systolic != null && r.diastolic != null) vitalsDetails.push(`blood pressure at ${r.systolic}/${r.diastolic}`);
+    if (r.heartRate != null) vitalsDetails.push(`heart rate ${r.heartRate}`);
+    if (r.temperature != null) vitalsDetails.push(`temp ${r.temperature}\u00B0F`);
+    if (vitalsDetails.length > 0) {
+      parts.push(`${name} had vitals checked \u2014 ${vitalsDetails.join(', ')}.`);
+    } else {
+      parts.push(`${name} had vitals recorded today.`);
+    }
   }
 
-  // Medication status with context
+  // Medication status
   if (opts.medsTotal > 0) {
     if (opts.medsDone === opts.medsTotal) {
       parts.push(`All ${opts.medsTotal} medications have been taken.`);
     } else if (opts.medsDone > 0) {
       const pending = opts.medsTotal - opts.medsDone;
-      parts.push(`${opts.medsDone} of ${opts.medsTotal} medications taken, ${pending} still pending.`);
+      parts.push(`${opts.medsDone} of ${opts.medsTotal} medications confirmed \u2014 ${pending} still pending.`);
     } else {
-      parts.push('No medications logged yet.');
+      parts.push(`${opts.medsTotal} medications still need to be confirmed.`);
     }
   }
 
-  // Meals + hydration combined
+  // Nutrition combined
   const nutritionParts: string[] = [];
-  if (opts.mealsTotal > 0 && opts.mealsDone > 0) {
-    nutritionParts.push(`${opts.mealsDone} meal${opts.mealsDone > 1 ? 's' : ''} logged`);
+  if (opts.mealsTotal > 0) {
+    if (opts.mealsDone >= opts.mealsTotal) {
+      nutritionParts.push(`${opts.mealsDone} meal${opts.mealsDone > 1 ? 's' : ''} logged`);
+    } else if (opts.mealsDone > 0) {
+      nutritionParts.push(`${opts.mealsDone} of ${opts.mealsTotal} meals logged`);
+    } else {
+      nutritionParts.push('no meals logged');
+    }
   }
   if (opts.waterGlasses > 0) {
-    nutritionParts.push(`${opts.waterGlasses} glasses of water`);
+    nutritionParts.push(`${opts.waterGlasses} glass${opts.waterGlasses > 1 ? 'es' : ''} of water`);
+  } else if (opts.mealsTotal > 0 || opts.medsTotal > 0) {
+    nutritionParts.push('no water logged');
   }
   if (nutritionParts.length > 0) {
-    parts.push(nutritionParts.join(' and ') + '.');
+    const combined = nutritionParts.join(' and ');
+    parts.push(combined.charAt(0).toUpperCase() + combined.slice(1) + '.');
   }
 
-  // Wellness + vitals
+  // Wellness
   if (opts.wellnessDone > 0) {
     parts.push(`${opts.wellnessDone} wellness check-in${opts.wellnessDone > 1 ? 's' : ''} completed.`);
-  }
-  if (opts.hasVitals) {
-    parts.push('Vitals recorded.');
-  }
-
-  // Remaining items
-  const remaining: string[] = [];
-  if (opts.medsTotal > 0 && opts.medsDone < opts.medsTotal) {
-    remaining.push(`${opts.medsTotal - opts.medsDone} medication${opts.medsTotal - opts.medsDone > 1 ? 's' : ''}`);
-  }
-  if (opts.wellnessTotal > opts.wellnessDone) {
-    remaining.push('wellness check');
-  }
-  if (remaining.length > 0) {
-    parts.push(`Still needs attention: ${remaining.join(', ')}.`);
   }
 
   return parts.join(' ');

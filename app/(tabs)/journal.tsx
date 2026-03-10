@@ -32,7 +32,8 @@ import { useDataListener } from '../../lib/events';
 import { EVENT } from '../../lib/eventNames';
 import { isBiometricEnabled, shouldLockSession, requireAuthentication, updateLastActivity, getAutoLockTimeout } from '../../utils/biometricAuth';
 import { getNotesLogs, NotesLog } from '../../utils/centralStorage';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { getMedicalInfo, MedicalInfo } from '../../utils/medicalInfo';
 import { safeGetItem } from '../../utils/safeStorage';
@@ -68,6 +69,88 @@ function formatTime(t: string): string {
 }
 
 // ============================================================================
+// VALUE RING — SVG ring displaying a recorded value
+// Matches ProgressRings visual language but for data values, not task progress
+// ============================================================================
+
+const VALUE_RING_SIZE = 62;
+const VALUE_RING_STROKE = 4;
+const VALUE_RING_RADIUS = (VALUE_RING_SIZE - VALUE_RING_STROKE) / 2;
+const VALUE_RING_CIRCUMFERENCE = 2 * Math.PI * VALUE_RING_RADIUS;
+
+function ValueRing({
+  value,
+  label,
+  color,
+  fillPct,
+}: {
+  value: string;
+  label: string;
+  color: string;
+  fillPct: number;
+}) {
+  const dashArray = Math.min(fillPct / 100, 1) * VALUE_RING_CIRCUMFERENCE;
+  const hasData = fillPct > 0;
+
+  return (
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <View style={{ width: VALUE_RING_SIZE, height: VALUE_RING_SIZE, position: 'relative' }}>
+        <Svg width={VALUE_RING_SIZE} height={VALUE_RING_SIZE} style={{ transform: [{ rotate: '-90deg' }] }}>
+          <Circle
+            cx={VALUE_RING_SIZE / 2}
+            cy={VALUE_RING_SIZE / 2}
+            r={VALUE_RING_RADIUS}
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={VALUE_RING_STROKE}
+          />
+          {hasData && (
+            <Circle
+              cx={VALUE_RING_SIZE / 2}
+              cy={VALUE_RING_SIZE / 2}
+              r={VALUE_RING_RADIUS}
+              fill="none"
+              stroke={color}
+              strokeWidth={VALUE_RING_STROKE}
+              strokeDasharray={`${dashArray} ${VALUE_RING_CIRCUMFERENCE}`}
+              strokeLinecap="round"
+              opacity={0.8}
+            />
+          )}
+        </Svg>
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Text style={{
+            fontSize: value.length > 4 ? 10 : value.length > 3 ? 12 : 14,
+            fontWeight: '700',
+            color: hasData ? color : Colors.textDisabled,
+          }}>
+            {value}
+          </Text>
+        </View>
+      </View>
+      <Text style={{
+        fontSize: 9,
+        fontWeight: '600',
+        letterSpacing: 1,
+        color: Colors.textMuted,
+        textTransform: 'uppercase',
+        marginTop: 6,
+      }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -93,7 +176,6 @@ export default function JournalTab() {
   const [dailyReport, setDailyReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
   const [clinicalReport, setClinicalReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
   const [exporting, setExporting] = useState(false);
-  const [journalTab, setJournalTab] = useState<'story' | 'reflections' | 'visit'>('story');
 
   const loadReport = useCallback(async () => {
     try {
@@ -227,6 +309,7 @@ export default function JournalTab() {
 
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const hour = new Date().getHours();
 
   if (loading && !brief) {
     return (
@@ -244,21 +327,21 @@ export default function JournalTab() {
     return (
       <View style={s.container}>
         <AuroraBackground variant="journal" />
-        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <View style={{ flex: 1 }}>
           <ScrollView
             style={s.scrollView}
-            contentContainerStyle={[s.scrollContent, { paddingBottom: insets.bottom + 70 }]}
+            contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 70 }]}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
             }
           >
-            <ScreenHeader title="Journal" subtitle={`${dayName}, ${dateStr}`} purpose="What today's care means." />
+            <ScreenHeader title="Journal" subtitle={`${dayName}, ${dateStr}`} />
             <View style={s.errorContainer}>
               <Text style={s.errorIcon}>{'\u26A0\uFE0F'}</Text>
               <Text style={s.errorText}>{error}</Text>
             </View>
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
@@ -412,8 +495,64 @@ export default function JournalTab() {
     return items;
   }
 
-  // Glance stats for share report
-  const allGlanceTiles: { bucket: string; label: string; value: string; color: string }[] = [
+  // ── Ring tiles for recorded values (not task ratios) ──
+  type RingTile = { bucket: string; label: string; value: string; color: string; fillPct: number };
+
+  const ringTiles: RingTile[] = [];
+
+  // Vitals readings — actual measured values
+  if (hasVitals && brief?.vitals?.readings) {
+    const r = brief.vitals.readings;
+    if (r.systolic != null && r.diastolic != null) {
+      // fillPct: normalized BP position between 90 (low) and 180 (critical)
+      const bpPct = Math.min(Math.max(((r.systolic - 90) / 90) * 100, 10), 95);
+      ringTiles.push({
+        bucket: 'vitals-bp',
+        label: 'BP',
+        value: `${r.systolic}/${r.diastolic}`,
+        color: dotColorToStyle(getVitalsDotColor()),
+        fillPct: bpPct,
+      });
+    }
+    if (r.heartRate != null) {
+      const hrPct = Math.min(Math.max(((r.heartRate - 40) / 80) * 100, 10), 95);
+      ringTiles.push({
+        bucket: 'vitals-hr',
+        label: 'HR',
+        value: `${r.heartRate}`,
+        color: dotColorToStyle('green'),
+        fillPct: hrPct,
+      });
+    }
+    if (r.temperature != null) {
+      const tempPct = Math.min(Math.max(((r.temperature - 96) / 5) * 100, 10), 95);
+      ringTiles.push({
+        bucket: 'vitals-temp',
+        label: 'Temp',
+        value: `${r.temperature}`,
+        color: dotColorToStyle('green'),
+        fillPct: tempPct,
+      });
+    }
+  }
+
+  // Sleep
+  const sleepVal = getSleepValue();
+  const sleepPct = brief?.sleep?.hours ? Math.min((brief.sleep.hours / 9) * 100, 95) : 0;
+  ringTiles.push({
+    bucket: 'sleep',
+    label: 'Sleep',
+    value: sleepVal,
+    color: dotColorToStyle(getSleepDotColor()),
+    fillPct: sleepPct,
+  });
+
+  // Limit to 4 tiles max for layout
+  const displayRingTiles = ringTiles.slice(0, 4);
+  const hasAnyRingData = ringTiles.some(t => t.fillPct > 0);
+
+  // ── Legacy glance stats for share/report builders ──
+  const reportGlanceTiles: { bucket: string; label: string; value: string; color: string }[] = [
     { bucket: 'meds',     label: 'Meds',     value: `${medsDone}/${medsTotal}`,   color: dotColorToStyle(getMedsDotColor()) },
     { bucket: 'meals',    label: 'Meals',     value: `${mealsDone}/${mealsTotal}`, color: dotColorToStyle(getMealsDotColor()) },
     { bucket: 'water',    label: 'Water',     value: `${waterGlasses}/8`,          color: dotColorToStyle(getHydrationDotColor()) },
@@ -421,10 +560,6 @@ export default function JournalTab() {
     { bucket: 'sleep',    label: 'Sleep',     value: getSleepValue(),              color: dotColorToStyle(getSleepDotColor()) },
     { bucket: 'vitals',   label: 'BP',        value: getVitalsValue(),             color: dotColorToStyle(getVitalsDotColor()) },
   ];
-
-  const glanceStats = enabledBuckets.length > 0
-    ? allGlanceTiles.filter(t => enabledBuckets.includes(t.bucket as any))
-    : allGlanceTiles;
 
   // ============================================================================
   // SHARE / REPORT HANDLERS
@@ -438,7 +573,7 @@ export default function JournalTab() {
       brief,
       dateStr,
       dayName,
-      glanceStats,
+      reportGlanceTiles,
       buildHandoffNotes(),
     );
     setDailyReport(result);
@@ -509,7 +644,6 @@ export default function JournalTab() {
   // ============================================================================
   // PATIENT CONTEXT
   // ============================================================================
-  const activeDiagnoses = (medicalInfo?.diagnoses ?? []).filter(d => d.status === 'active');
   const allergies = medicalInfo?.allergies ?? [];
   const showPatientCard = patientName.length > 0;
 
@@ -520,10 +654,10 @@ export default function JournalTab() {
     <View style={s.container}>
       <AuroraBackground variant="journal" />
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      <View style={{ flex: 1 }}>
         <ScrollView
           style={s.scrollView}
-          contentContainerStyle={[s.scrollContent, { paddingBottom: insets.bottom + 70 }]}
+          contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 70 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
@@ -536,7 +670,28 @@ export default function JournalTab() {
             purpose="What today's care means."
             style={s.journalHeader}
             rightAction={
-              <View style={s.headerButtons}>
+              <View style={s.headerRightRow}>
+                {showPatientCard && (
+                  <TouchableOpacity
+                    onPress={() => navigate('/patient')}
+                    style={s.headerPatientChip}
+                    activeOpacity={0.7}
+                    accessibilityLabel={`Patient: ${patientName}. Tap to view profile.`}
+                    accessibilityRole="button"
+                  >
+                    <View style={s.headerPatientAvatar}>
+                      <Text style={s.headerPatientAvatarText}>
+                        {patientName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={s.headerPatientName}>{patientName}</Text>
+                    {allergies.length > 0 && (
+                      <View style={s.headerAllergyBadge}>
+                        <Text style={s.headerAllergyBadgeText}>{'\u26A0'}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={s.headerShareBtn}
                   onPress={handleShareDaily}
@@ -544,37 +699,11 @@ export default function JournalTab() {
                   accessibilityLabel="Share daily summary"
                   accessibilityRole="button"
                 >
-                  <Text style={s.headerShareBtnText}>{'\uD83D\uDCCB'} Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={s.headerReportBtn}
-                  onPress={handleShareClinical}
-                  activeOpacity={0.7}
-                  accessibilityLabel="Clinical report"
-                  accessibilityRole="button"
-                >
-                  <Text style={s.headerReportBtnText}>{'\uD83E\uDE7A'} Report</Text>
+                  <Text style={s.headerShareBtnText}>Share</Text>
                 </TouchableOpacity>
               </View>
             }
           />
-
-          {/* ─── TAB BAR ─── */}
-          <View style={s.journalTabs}>
-            {(['story', 'reflections', 'visit'] as const).map(tab => (
-              <TouchableOpacity
-                key={tab}
-                style={[s.journalTab, journalTab === tab && s.journalTabActive]}
-                onPress={() => setJournalTab(tab)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: journalTab === tab }}
-              >
-                <Text style={[s.journalTabText, journalTab === tab && s.journalTabTextActive]}>
-                  {tab === 'story' ? "Today's Story" : tab === 'reflections' ? 'Reflections' : 'Visit Prep'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
 
           {/* ─── SAMPLE DATA INDICATOR ─── */}
           {isSampleMode && (
@@ -583,118 +712,130 @@ export default function JournalTab() {
             </View>
           )}
 
-          {/* ─── PATIENT CONTEXT CARD ─── */}
-          {showPatientCard && (
-            <TouchableOpacity
-              style={s.patientCard}
-              onPress={() => navigate('/patient')}
-              activeOpacity={0.7}
-              accessibilityLabel={`Patient: ${patientName}. Tap to view profile.`}
-              accessibilityRole="button"
-            >
-              <View style={s.patientCardAvatar}>
-                <Text style={s.patientCardAvatarText}>{patientName.charAt(0).toUpperCase()}</Text>
-              </View>
-              <View style={s.patientCardInfo}>
-                <View style={s.patientCardNameRow}>
-                  <Text style={s.patientCardName}>{patientName}</Text>
-                  {patientAge != null && (
-                    <Text style={s.patientCardAge}>{patientAge} y/o</Text>
-                  )}
-                  {allergies.length > 0 && (
-                    <View style={s.allergyBadge}>
-                      <Text style={s.allergyBadgeText}>{'\u26A0'} {allergies[0]}</Text>
-                    </View>
-                  )}
-                </View>
-                {activeDiagnoses.length > 0 && (
-                  <Text style={s.patientCardConditions} numberOfLines={1}>
-                    {activeDiagnoses.map(d => d.condition).join(' \u00B7 ')}
-                  </Text>
-                )}
-              </View>
-              <Text style={s.patientCardChevron}>{'\u203A'}</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* ═══ TAB: TODAY'S STORY ═══ */}
-          {journalTab === 'story' && (
+          {/* ═══ DAY AT A GLANCE — Ring tiles ═══ */}
+          {hasAnyRingData && (
             <>
-              {/* Day at a Glance grid */}
+              <View style={s.sectionHeader}>
+                <Text style={s.sectionTitle}>Recorded today</Text>
+              </View>
               <View style={s.glanceGrid}>
-                {glanceStats.map(stat => (
-                  <View key={stat.bucket} style={[s.glanceTile, { backgroundColor: stat.color + '18', borderColor: stat.color + '35' }]}>
-                    <Text style={[s.glanceTileValue, { color: stat.color }]}>{stat.value}</Text>
-                    <Text style={s.glanceTileLabel}>{stat.label}</Text>
-                  </View>
+                {displayRingTiles.map(tile => (
+                  <ValueRing
+                    key={tile.bucket}
+                    value={tile.value}
+                    label={tile.label}
+                    color={tile.color}
+                    fillPct={tile.fillPct}
+                  />
                 ))}
               </View>
-
-              {/* Narrative text */}
-              <Text style={s.narrativeText}>
-                {brief
-                  ? generateEnhancedNarrative(brief, {
-                      medsDone, medsTotal, mealsDone, mealsTotal,
-                      waterGlasses, wellnessDone, wellnessTotal, hasVitals,
-                    })
-                  : ''}
+            </>
+          )}
+          {!hasAnyRingData && (medsTotal > 0 || mealsTotal > 0) && (
+            <View style={s.noDataCard}>
+              <Text style={s.noDataText}>
+                No vitals or sleep recorded today. Log from the Today tab to see values here.
               </Text>
+            </View>
+          )}
 
-              {/* First-use guidance when nothing logged today */}
-              {medsTotal === 0 && mealsTotal === 0 && waterGlasses === 0 && !hasMorning && !hasEvening && !hasVitals && (
-                <View style={s.firstUseCard}>
-                  <Text style={s.firstUseTitle}>Your journal builds as you log</Text>
-                  <Text style={s.firstUseText}>
-                    Track medications, meals, vitals, or mood from the Now tab and your daily summary will appear here.
-                  </Text>
-                </View>
-              )}
+          {/* ═══ NARRATIVE ═══ */}
+          <Text style={s.narrativeText}>
+            {brief
+              ? generateEnhancedNarrative(brief, {
+                  medsDone, medsTotal, mealsDone, mealsTotal,
+                  waterGlasses, wellnessDone, wellnessTotal, hasVitals,
+                  patientName: patientName || brief.patient?.name || undefined,
+                })
+              : ''}
+          </Text>
+
+          {/* First-use guidance when nothing logged today */}
+          {medsTotal === 0 && mealsTotal === 0 && waterGlasses === 0 && !hasMorning && !hasEvening && !hasVitals && (
+            <View style={s.firstUseCard}>
+              <Text style={s.firstUseTitle}>Your journal builds as you log</Text>
+              <Text style={s.firstUseText}>
+                Track medications, meals, vitals, or mood from the Now tab and your daily summary will appear here.
+              </Text>
+            </View>
+          )}
+
+          {/* ═══ WHAT STANDS OUT — reflections inline ═══ */}
+          {reflections.length > 0 && (
+            <>
+              <View style={s.sectionHeader}>
+                <Text style={s.sectionTitle}>What Stands Out</Text>
+              </View>
+              {reflections.map((ref) => {
+                const isAttention = ref.category === 'nutrition' || ref.category === 'hydration';
+                return (
+                  <View
+                    key={ref.id}
+                    style={[
+                      s.reflectionCard,
+                      isAttention && s.reflectionCardAttention,
+                    ]}
+                  >
+                    <View style={s.reflectionHeader}>
+                      <Text style={s.reflectionIcon}>{ref.icon}</Text>
+                      <Text style={s.reflectionObservation}>{ref.observation}</Text>
+                    </View>
+                    {ref.recommendation && (
+                      <Text style={s.reflectionRecommendation}>{ref.recommendation}</Text>
+                    )}
+                  </View>
+                );
+              })}
             </>
           )}
 
-          {/* ═══ TAB: REFLECTIONS ═══ */}
-          {journalTab === 'reflections' && (
-            <>
-              {reflections.length > 0 ? reflections.map((ref) => (
-                <View key={ref.id} style={s.reflectionCard}>
-                  <View style={s.reflectionHeader}>
-                    <Text style={s.reflectionIcon}>{ref.icon}</Text>
-                    <Text style={s.reflectionObservation}>{ref.observation}</Text>
-                  </View>
-                  {ref.recommendation && (
-                    <Text style={s.reflectionRecommendation}>{ref.recommendation}</Text>
-                  )}
+          {/* ═══ TODAY'S LOG — chronological events ═══ */}
+          {brief && (() => {
+            const logItems = buildHandoffNotes();
+            if (logItems.length === 0) return null;
+            return (
+              <>
+                <View style={s.sectionHeader}>
+                  <Text style={s.sectionTitle}>{"Today\u0027s Log"}</Text>
                 </View>
-              )) : (
-                <View style={s.firstUseCard}>
-                  <Text style={s.firstUseTitle}>Reflections appear as you log</Text>
-                  <Text style={s.firstUseText}>
-                    Log medications, meals, and vitals from the Now tab and personalized reflections will appear here.
-                  </Text>
+                <View style={s.logCard}>
+                  {logItems.map((item, i) => (
+                    <View
+                      key={`log-${i}`}
+                      style={[
+                        s.logRow,
+                        i < logItems.length - 1 && s.logRowBorder,
+                      ]}
+                    >
+                      <Text style={s.logIcon}>{item.icon}</Text>
+                      <Text style={s.logText}>{item.text}</Text>
+                    </View>
+                  ))}
                 </View>
-              )}
-            </>
+              </>
+            );
+          })()}
+
+          {/* ═══ UPCOMING ═══ */}
+          {(showAppointment || hasVitals) && (
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionTitle}>Upcoming</Text>
+            </View>
           )}
 
-          {/* ═══ TAB: VISIT PREP ═══ */}
-          {journalTab === 'visit' && (
+          {showAppointment && brief?.nextAppointment && (
             <>
-              {/* Upcoming appointment */}
-              {showAppointment && brief?.nextAppointment && (
-                <View style={s.appointmentCard}>
-                  <Text style={s.appointmentIcon}>{'\uD83D\uDCC5'}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.appointmentTitle}>
-                      {brief.nextAppointment.title || 'Upcoming Appointment'}
-                    </Text>
-                    <Text style={s.appointmentDate}>
-                      {daysUntilAppt === 0 ? 'Today' : daysUntilAppt === 1 ? 'Tomorrow' : `In ${daysUntilAppt} days`}
-                    </Text>
-                  </View>
+              <View style={s.appointmentCard}>
+                <Text style={s.appointmentIcon}>{'\uD83D\uDCC5'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.appointmentTitle}>
+                    {brief.nextAppointment.title || 'Upcoming Appointment'}
+                  </Text>
+                  <Text style={s.appointmentDate}>
+                    {daysUntilAppt === 0 ? 'Today' : daysUntilAppt === 1 ? 'Tomorrow' : `In ${daysUntilAppt} days`}
+                  </Text>
                 </View>
-              )}
-
-              {/* Visit Prep CTA */}
+              </View>
               <TouchableOpacity
                 style={s.visitPrepCard}
                 onPress={() => navigate('/provider-prep')}
@@ -709,29 +850,31 @@ export default function JournalTab() {
                 </View>
                 <Text style={s.visitPrepArrow}>{'\u203A'}</Text>
               </TouchableOpacity>
-
-              {/* Recent vitals readings */}
-              {hasVitals && brief?.vitals?.readings && (
-                <View style={s.recentReadingsCard}>
-                  <Text style={s.recentReadingsTitle}>Recent Readings</Text>
-                  {brief.vitals.readings.systolic != null && (
-                    <Text style={s.recentReadingRow}>
-                      Blood Pressure: {brief.vitals.readings.systolic}/{brief.vitals.readings.diastolic} mmHg
-                    </Text>
-                  )}
-                  {brief.vitals.readings.heartRate != null && (
-                    <Text style={s.recentReadingRow}>
-                      Heart Rate: {brief.vitals.readings.heartRate} bpm
-                    </Text>
-                  )}
-                  {brief.vitals.readings.oxygen != null && (
-                    <Text style={s.recentReadingRow}>
-                      Oxygen: {brief.vitals.readings.oxygen}%
-                    </Text>
-                  )}
-                </View>
-              )}
             </>
+          )}
+
+          {/* ─── SHARE ACTIONS ─── */}
+          {brief && (
+            <View style={s.footerActions}>
+              <TouchableOpacity
+                style={s.footerShareBtn}
+                onPress={handleShareDaily}
+                activeOpacity={0.7}
+                accessibilityLabel="Share daily summary as PDF"
+                accessibilityRole="button"
+              >
+                <Text style={s.footerShareBtnText}>{'\uD83D\uDCCB'} Share Summary</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.footerReportBtn}
+                onPress={handleShareClinical}
+                activeOpacity={0.7}
+                accessibilityLabel="Generate clinical report"
+                accessibilityRole="button"
+              >
+                <Text style={s.footerReportBtnText}>{'\uD83E\uDE7A'} Clinical Report</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* ─── TIMESTAMP ─── */}
@@ -744,7 +887,7 @@ export default function JournalTab() {
           )}
 
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       <ReportPreviewModal
         visible={showDailyPreview}
@@ -823,60 +966,27 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   authGateButton: { backgroundColor: c.accent, paddingHorizontal: 32, paddingVertical: 14, borderRadius: BorderRadius.lg },
   authGateButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
-  // ─── JOURNAL TABS ───
-  journalTabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-    marginTop: 8,
-  },
-  journalTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: c.glassDim,
-    borderWidth: 1,
-    borderColor: c.glassBorder,
-  },
-  journalTabActive: {
-    backgroundColor: c.accentDim,
-    borderColor: c.accentBorder,
-  },
-  journalTabText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: c.textMuted,
-  },
-  journalTabTextActive: {
-    color: c.accent,
-  },
-
   // ─── DAY AT A GLANCE GRID ───
   glanceGrid: {
-    flexDirection: 'row',
-    gap: 10,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+    paddingVertical: 8,
     marginBottom: 18,
   },
-  glanceTile: {
-    flex: 1,
-    minWidth: 80,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    alignItems: 'center',
+
+  // ─── NO DATA FALLBACK ───
+  noDataCard: {
+    backgroundColor: c.glassDim,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 18,
+    alignItems: 'center' as const,
   },
-  glanceTileValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  glanceTileLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1.2,
+  noDataText: {
+    fontSize: 13,
     color: c.textMuted,
-    textTransform: 'uppercase',
-    marginTop: 5,
+    textAlign: 'center' as const,
+    lineHeight: 19,
   },
 
   // ─── APPOINTMENT CARD ───
@@ -905,27 +1015,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     marginTop: 2,
   },
 
-  // ─── RECENT READINGS ───
-  recentReadingsCard: {
-    backgroundColor: c.glass,
-    borderWidth: 1,
-    borderColor: c.glassBorder,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-  },
-  recentReadingsTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: c.textPrimary,
-    marginBottom: 8,
-  },
-  recentReadingRow: {
-    fontSize: 13,
-    color: c.textSecondary,
-    lineHeight: 22,
-  },
-
   // ─── SAMPLE DATA INDICATOR ───
   sampleIndicator: {
     backgroundColor: c.accentLight,
@@ -948,9 +1037,52 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     marginBottom: 4,
     paddingHorizontal: 20,
   },
-  headerButtons: {
-    flexDirection: 'row',
+  headerRightRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  headerPatientChip: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 6,
+    backgroundColor: c.glass,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  headerPatientAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: c.accentDim,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  headerPatientAvatarText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: c.accent,
+  },
+  headerPatientName: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: c.textSecondary,
+  },
+  headerAllergyBadge: {
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.25)',
+    borderRadius: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  headerAllergyBadgeText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    color: '#EF4444',
   },
   headerShareBtn: {
     backgroundColor: c.accentDim,
@@ -962,89 +1094,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   headerShareBtnText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: c.accent,
-  },
-  headerReportBtn: {
-    backgroundColor: c.purpleFaint,
-    borderWidth: 1,
-    borderColor: c.purpleBorder,
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 9,
-  },
-  headerReportBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: c.purpleBright,
-  },
-
-  // ─── PATIENT CONTEXT CARD ───
-  patientCard: {
-    backgroundColor: c.glass,
-    borderWidth: 1,
-    borderColor: c.glassBorder,
-    borderRadius: 10,
-    padding: 10,
-    paddingHorizontal: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  patientCardAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: c.accentDim,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  patientCardAvatarText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: c.accent,
-  },
-  patientCardInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  patientCardNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
-  },
-  patientCardName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: c.textPrimary,
-  },
-  patientCardAge: {
-    fontSize: 10,
-    color: c.textSecondary,
-  },
-  allergyBadge: {
-    backgroundColor: 'rgba(239,68,68,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.25)',
-    borderRadius: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  allergyBadgeText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-  patientCardConditions: {
-    fontSize: 11,
-    color: c.textSecondary,
-  },
-  patientCardChevron: {
-    fontSize: 14,
-    color: c.textSecondary,
   },
 
   // ─── SECTION HEADER ───
@@ -1158,6 +1209,77 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   visitPrepArrow: {
     fontSize: 22,
     color: c.textMuted,
+  },
+
+  // ─── REFLECTION ATTENTION ───
+  reflectionCardAttention: {
+    backgroundColor: c.amberLight,
+    borderColor: c.amberBorder,
+  },
+
+  // ─── TODAY'S LOG ───
+  logCard: {
+    backgroundColor: c.cardBackground,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+    padding: 14,
+    marginBottom: 14,
+  },
+  logRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  logRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  logIcon: {
+    fontSize: 14,
+  },
+  logText: {
+    flex: 1,
+    fontSize: 13,
+    color: c.textSecondary,
+    lineHeight: 18,
+  },
+
+  // ─── FOOTER SHARE ACTIONS ───
+  footerActions: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 4,
+  },
+  footerShareBtn: {
+    backgroundColor: c.accentDim,
+    borderWidth: 1,
+    borderColor: c.accentBorder,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  footerShareBtnText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: c.accent,
+  },
+  footerReportBtn: {
+    backgroundColor: c.purpleFaint,
+    borderWidth: 1,
+    borderColor: c.purpleBorder,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  footerReportBtnText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: c.purpleBright,
   },
 
   // ─── TIMESTAMP ───

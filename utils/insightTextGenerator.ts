@@ -1,13 +1,13 @@
 // ============================================================================
 // INSIGHT TEXT GENERATOR
 // Produces plain-language insight strings from care data
-// Replaces dashboard metrics with human-readable guidance
+// Uses instance-based data (same source as Today page and Journal)
 // ============================================================================
 
 import type { InsightText, InsightCategory } from '../types/insightText';
-import { getMedicationLogs, getMedications } from './medicationStorage';
 import { getVitalsInRange, VitalReading } from './vitalsStorage';
 import { toLocalDateString } from '../services/carePlanGenerator';
+import { listDailyInstancesRange, DEFAULT_PATIENT_ID } from '../storage/carePlanRepo';
 import { CarePlanConfig, BucketType, getEnabledBuckets } from '../types/carePlanConfig';
 import { logError } from './devLog';
 
@@ -20,6 +20,44 @@ export interface InsightResults {
   improving: InsightText[];
   missing: InsightText[];
   patterns: InsightText[];
+}
+
+export interface PeriodSummary {
+  totalInstances: number;
+  completedInstances: number;
+  completionRate: number;
+  activeDays: number;
+  totalDays: number;
+  topBucket: string | null;
+}
+
+export async function computePeriodSummary(daysBack: number): Promise<PeriodSummary> {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - daysBack);
+  const startStr = toLocalDateString(start);
+  const endStr = toLocalDateString(today);
+
+  const instances = await listDailyInstancesRange(DEFAULT_PATIENT_ID, startStr, endStr);
+  const completed = instances.filter(i => i.status === 'completed' || i.status === 'skipped').length;
+  const daySet = new Set(instances.map(i => i.date).filter(Boolean));
+
+  // Find the bucket with the most instances
+  const bucketCounts: Record<string, number> = {};
+  for (const inst of instances) {
+    const t = inst.itemType || 'other';
+    bucketCounts[t] = (bucketCounts[t] || 0) + 1;
+  }
+  const topBucket = Object.entries(bucketCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+  return {
+    totalInstances: instances.length,
+    completedInstances: completed,
+    completionRate: instances.length > 0 ? Math.round((completed / instances.length) * 100) : 0,
+    activeDays: daySet.size,
+    totalDays: daysBack,
+    topBucket,
+  };
 }
 
 export async function generateAllInsights(
@@ -40,9 +78,9 @@ export async function generateAllInsights(
     startDate.setDate(startDate.getDate() - daysBack);
 
     // Generate each category
-    results.watch = await generateWatchItems(enabledBuckets, startDate, today);
-    results.improving = await generateImprovements(enabledBuckets, startDate, today);
-    results.missing = generateDataGaps(enabledBuckets, config, daysBack);
+    results.watch = await generateWatchItems(enabledBuckets, startDate, today, daysBack);
+    results.improving = await generateImprovements(enabledBuckets, startDate, today, daysBack);
+    results.missing = await generateDataGaps(enabledBuckets, config, daysBack, startDate, today);
     results.patterns = await generatePatterns(enabledBuckets, startDate, today);
   } catch (err) {
     logError('generateAllInsights', err);
@@ -58,31 +96,37 @@ export async function generateAllInsights(
 async function generateWatchItems(
   buckets: BucketType[],
   start: Date,
-  end: Date
+  end: Date,
+  daysBack: number
 ): Promise<InsightText[]> {
   const items: InsightText[] = [];
 
-  // Medication adherence check
+  // Medication adherence check (instance-based)
   if (buckets.includes('meds')) {
     try {
-      const meds = await getMedications();
-      const activeMeds = meds.filter(m => m.active !== false);
-      if (activeMeds.length > 0) {
-        const logs = await getMedicationLogs();
-        const recentLogs = logs.filter(l => {
-          const d = new Date(l.timestamp);
-          return d >= start && d <= end;
-        });
-        const missed = recentLogs.filter(l => !l.taken);
-        if (missed.length > 3) {
+      const startStr = toLocalDateString(start);
+      const endStr = toLocalDateString(end);
+      const instances = await listDailyInstancesRange(DEFAULT_PATIENT_ID, startStr, endStr);
+      const medInstances = instances.filter(i => i.itemType === 'medication');
+
+      if (medInstances.length > 0) {
+        const completed = medInstances.filter(i => i.status === 'completed' || i.status === 'skipped').length;
+        const missed = medInstances.filter(i => i.status === 'missed' || i.status === 'pending').length;
+        const adherenceRate = Math.round((completed / medInstances.length) * 100);
+
+        if (adherenceRate < 80) {
           items.push({
             id: 'watch-med-adherence',
             icon: '\u26A0\uFE0F',
             category: 'watch',
             title: 'Medication adherence',
-            body: `${missed.length} doses missed or skipped in the last 7 days.`,
+            body: `${adherenceRate}% adherence over the last ${daysBack} days \u2014 ${missed} doses missed or pending.`,
             severity: 'watch',
             relatedTypes: ['meds'],
+            whyItMatters: 'Consistent medication timing is important for effectiveness. Missing multiple doses may need a schedule adjustment.',
+            actions: [
+              { label: 'View Schedule', icon: '\uD83D\uDCCB', route: '/care-plan' },
+            ],
           });
         }
       }
@@ -104,9 +148,14 @@ async function generateWatchItems(
           icon: '\u26A0\uFE0F',
           category: 'watch',
           title: 'Blood pressure elevated',
-          body: `${highBP.length} readings above 140 systolic in the last 7 days.`,
+          body: `${highBP.length} readings above 140 systolic in the last ${daysBack} days.`,
           severity: 'watch',
           relatedTypes: ['vitals'],
+          whyItMatters: 'Keeping blood pressure under 130/80 reduces risk of heart attack and stroke. Bring this up at the next provider visit.',
+          actions: [
+            { label: 'Log Reading', icon: '\uD83D\uDCCA', route: '/log-vitals' },
+            { label: 'Visit Prep', icon: '\uD83D\uDCCB', route: '/provider-prep' },
+          ],
         });
       }
     } catch {}
@@ -122,30 +171,32 @@ async function generateWatchItems(
 async function generateImprovements(
   buckets: BucketType[],
   start: Date,
-  end: Date
+  end: Date,
+  daysBack: number
 ): Promise<InsightText[]> {
   const items: InsightText[] = [];
 
   if (buckets.includes('meds')) {
     try {
-      const logs = await getMedicationLogs();
-      const recentLogs = logs.filter(l => {
-        const d = new Date(l.timestamp);
-        return d >= start && d <= end;
-      });
-      const taken = recentLogs.filter(l => l.taken).length;
-      const total = recentLogs.length;
-      if (total > 0) {
-        const rate = Math.round((taken / total) * 100);
+      const startStr = toLocalDateString(start);
+      const endStr = toLocalDateString(end);
+      const instances = await listDailyInstancesRange(DEFAULT_PATIENT_ID, startStr, endStr);
+      const medInstances = instances.filter(i => i.itemType === 'medication');
+
+      if (medInstances.length > 0) {
+        const completed = medInstances.filter(i => i.status === 'completed' || i.status === 'skipped').length;
+        const rate = Math.round((completed / medInstances.length) * 100);
+
         if (rate >= 90) {
           items.push({
             id: 'improve-med-adherence',
             icon: '\u2705',
             category: 'improving',
             title: 'Medication adherence strong',
-            body: `${rate}% adherence this week \u2014 great consistency.`,
+            body: `${rate}% adherence over the last ${daysBack} days \u2014 great consistency.`,
             severity: 'good',
             relatedTypes: ['meds'],
+            whyItMatters: 'Consistent medication adherence is the single most impactful thing a caregiver can track.',
           });
         }
       }
@@ -159,21 +210,72 @@ async function generateImprovements(
 // DATA GAPS — what's missing
 // ============================================================================
 
-function generateDataGaps(
+async function generateDataGaps(
   buckets: BucketType[],
   config: CarePlanConfig,
-  _daysBack: number
-): InsightText[] {
+  daysBack: number,
+  start: Date,
+  end: Date
+): Promise<InsightText[]> {
   const items: InsightText[] = [];
 
-  // Simplified version — check which enabled buckets have no recent data.
-  // Full implementation would check actual storage for each bucket type.
-  // Will be enhanced when the event model (Phase 4) is in place.
-  for (const bucket of buckets) {
-    const bucketConfig = config[bucket];
-    if (bucketConfig?.enabled && bucketConfig.priority !== 'optional') {
-      // Placeholder — full implementation checks actual storage
+  try {
+    const startStr = toLocalDateString(start);
+    const endStr = toLocalDateString(end);
+    const instances = await listDailyInstancesRange(DEFAULT_PATIENT_ID, startStr, endStr);
+
+    // Check for days with zero instances
+    const daySet = new Set<string>();
+    for (const inst of instances) {
+      if (inst.date) daySet.add(inst.date);
     }
+
+    const expectedDays = daysBack;
+    const actualDays = daySet.size;
+    const gapDays = expectedDays - actualDays;
+
+    if (gapDays >= 2) {
+      items.push({
+        id: 'gap-missing-days',
+        icon: '\uD83D\uDCC5',
+        category: 'missing',
+        title: `${gapDays} days with no data`,
+        body: `Out of the last ${daysBack} days, ${gapDays} have no logged activity. Consistent tracking helps identify patterns.`,
+        severity: 'info',
+        relatedTypes: [],
+      });
+    }
+
+    // Check per-bucket gaps
+    for (const bucket of buckets) {
+      const bucketConfig = config[bucket];
+      if (!bucketConfig?.enabled) continue;
+
+      const itemTypeMap: Record<string, string> = {
+        meds: 'medication', vitals: 'vitals', meals: 'nutrition',
+        wellness: 'wellness', activity: 'activity', sleep: 'sleep',
+      };
+      const itemType = itemTypeMap[bucket];
+      if (!itemType) continue;
+
+      const bucketInstances = instances.filter(i => i.itemType === itemType);
+      const bucketDays = new Set(bucketInstances.map(i => i.date)).size;
+
+      if (bucketDays < actualDays * 0.5 && actualDays >= 3) {
+        const label = bucket.charAt(0).toUpperCase() + bucket.slice(1);
+        items.push({
+          id: `gap-${bucket}`,
+          icon: '\uD83D\uDCCA',
+          category: 'missing',
+          title: `${label} tracking gap`,
+          body: `${label} data found on only ${bucketDays} of ${actualDays} active days. More data helps spot trends.`,
+          severity: 'info',
+          relatedTypes: [bucket],
+        });
+      }
+    }
+  } catch (err) {
+    logError('generateDataGaps', err);
   }
 
   if (items.length === 0 && buckets.length > 0) {

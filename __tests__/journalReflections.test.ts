@@ -86,13 +86,18 @@ describe('Journal Reflections', () => {
 });
 
 describe('Enhanced Narrative', () => {
-  test('generates time-appropriate greeting', () => {
-    const narrative = generateEnhancedNarrative(baseBrief, {
+  test('references patient name when provided', () => {
+    const briefWithVitals = {
+      ...baseBrief,
+      vitals: { scheduled: true, readings: { systolic: 120, diastolic: 80 } },
+    };
+    const narrative = generateEnhancedNarrative(briefWithVitals, {
       ...baseOpts,
       medsDone: 3, medsTotal: 3,
+      hasVitals: true,
+      patientName: 'Dad',
     });
-    // Should start with a time-based intro
-    expect(narrative).toMatch(/morning|today|summary/i);
+    expect(narrative).toContain('Dad');
   });
 
   test('combines meals and water naturally', () => {
@@ -100,18 +105,17 @@ describe('Enhanced Narrative', () => {
       ...baseOpts,
       mealsDone: 2, mealsTotal: 3, waterGlasses: 5,
     });
-    expect(narrative).toContain('2 meals logged');
+    expect(narrative).toContain('2 of 3 meals logged');
     expect(narrative).toContain('5 glasses of water');
   });
 
-  test('notes remaining items', () => {
+  test('notes pending medications', () => {
     const narrative = generateEnhancedNarrative(baseBrief, {
       ...baseOpts,
       medsDone: 2, medsTotal: 5,
       wellnessDone: 0, wellnessTotal: 2,
     });
-    expect(narrative).toContain('Still needs attention');
+    expect(narrative).toContain('still pending');
     expect(narrative).toContain('medication');
-    expect(narrative).toContain('wellness');
   });
 });
