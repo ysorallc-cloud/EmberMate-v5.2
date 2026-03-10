@@ -80,13 +80,10 @@ import { useNowInsights } from '../../hooks/useNowInsights';
 
 // Extracted components
 import { ProgressRings } from '../../components/now/ProgressRings';
-// SectionHeader replaced by inline SectionHeaderRow (flat, no icons)
 import { MorningMedsBanner } from '../../components/now/MorningMedsBanner';
 import { TimelineSection } from '../../components/now/TimelineSection';
 import { RoutineSheet } from '../../components/now/RoutineSheet';
 import { HandoffPromptCard } from '../../components/now/HandoffPromptCard';
-
-
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good Morning';

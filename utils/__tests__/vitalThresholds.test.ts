@@ -61,21 +61,21 @@ describe('vitalThresholds — unit tests', () => {
       const result = getVitalStatus('heartRate', 75);
       expect(result.status).toBe('normal');
       expect(result.label).toBe('✓ Normal');
-      expect(result.color).toBe('#34D399');
+      expect(result.color).toBe('#7BA67E');
     });
 
     it('should return low for values below low threshold', () => {
       const result = getVitalStatus('heartRate', 55);
       expect(result.status).toBe('low');
       expect(result.label).toBe('↓ Low');
-      expect(result.color).toBe('#FBBF24');
+      expect(result.color).toBe('#D4A853');
     });
 
     it('should return high for values above high threshold', () => {
       const result = getVitalStatus('heartRate', 110);
       expect(result.status).toBe('high');
       expect(result.label).toBe('↑ High');
-      expect(result.color).toBe('#FBBF24');
+      expect(result.color).toBe('#D4A853');
     });
 
     it('should return critical for values at or below criticalLow', () => {

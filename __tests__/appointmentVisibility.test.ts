@@ -7,7 +7,8 @@ describe('nextApptDisplay logic', () => {
   function computeNextApptDisplay(appt: { date: string; time?: string; provider?: string; specialty?: string; id: string } | null) {
     if (!appt) return null;
 
-    const apptDate = new Date(appt.date);
+    const [year, month, day] = appt.date.split('-').map(Number);
+    const apptDate = new Date(year, month - 1, day);
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     apptDate.setHours(0, 0, 0, 0);

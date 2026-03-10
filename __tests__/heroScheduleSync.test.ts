@@ -119,7 +119,7 @@ describe('Hero card matches enabled ring buckets', () => {
     expect(heroTotal).toBe(12);
   });
 
-  test('today.tsx uses heroDone/heroTotal instead of hardcoded bucket sums', () => {
+  test('today.tsx computes heroDone/heroTotal from enabled buckets', () => {
     const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
     const content = fs.readFileSync(todayPath, 'utf-8');
 

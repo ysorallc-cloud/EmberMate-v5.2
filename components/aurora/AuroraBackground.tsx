@@ -24,15 +24,15 @@ const AURORA_CONFIGS: Record<AuroraVariant, {
 }> = {
   today: {
     colors: [
-      'rgba(20, 140, 110, 0.55)',  // Teal — stronger wash
-      'rgba(40, 80, 100, 0.25)',   // Blue-teal
+      'rgba(42, 90, 60, 0.45)',    // Forest green wash
+      'rgba(30, 60, 50, 0.20)',    // Deep forest
       'transparent',
     ],
   },
   now: {
     colors: [
-      'rgba(20, 140, 110, 0.55)',  // Teal — stronger wash
-      'rgba(40, 80, 100, 0.25)',
+      'rgba(42, 90, 60, 0.45)',    // Forest green wash
+      'rgba(30, 60, 50, 0.20)',
       'transparent',
     ],
   },
