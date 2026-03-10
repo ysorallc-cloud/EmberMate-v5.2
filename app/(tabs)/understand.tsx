@@ -228,9 +228,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // Settings gear
   settingsGear: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
@@ -238,7 +238,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     justifyContent: 'center' as const,
   },
   settingsGearText: {
-    fontSize: 16,
+    fontSize: 20,
   },
 
   // Insight sections

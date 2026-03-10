@@ -430,7 +430,10 @@ export default function JournalTab() {
   // SHARE / REPORT HANDLERS
   // ============================================================================
   function handleShareDaily() {
-    if (!brief) return;
+    if (!brief) {
+      Alert.alert('Not Ready', 'Journal is still loading. Try again in a moment.');
+      return;
+    }
     const result = buildDailySummaryReport(
       brief,
       dateStr,
@@ -443,7 +446,10 @@ export default function JournalTab() {
   }
 
   function handleShareClinical() {
-    if (!brief) return;
+    if (!brief) {
+      Alert.alert('Not Ready', 'Clinical data is still loading. Try again in a moment.');
+      return;
+    }
     const result = buildClinicalReportData(brief);
     setClinicalReport(result);
     setShowClinicalPreview(true);

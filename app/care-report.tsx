@@ -979,7 +979,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
+    paddingTop: 16,
   },
 
   // Export button

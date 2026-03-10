@@ -68,9 +68,7 @@ export default function SettingsScreen() {
   const [appointmentCount, setAppointmentCount] = useState(0);
   const [caregiverCount, setCaregiverCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
-    advanced: true, // Advanced collapsed by default
-  });
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadPatientName();
@@ -574,15 +572,9 @@ export default function SettingsScreen() {
           title: 'Version',
           subtitle: Constants.expoConfig?.version ?? '5.8.0',
           color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => {},
+          onPress: () => Alert.alert('EmberMate', `Version ${Constants.expoConfig?.version ?? '5.8.0'}\n\nBuilt with care for caregivers.`, [{ text: 'OK' }]),
         },
       ],
-    },
-    {
-      id: 'advanced',
-      icon: '⚙️',
-      title: 'Advanced',
-      items: [],
     },
   ], [patientName, medicationCount, appointmentCount, caregiverCount, use24HourTime, hasSample]);
 

@@ -26,7 +26,8 @@ describe('Quick Add Sheet (Chunk 11)', () => {
   test('Today screen header says Today not Now', () => {
     const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
     const content = fs.readFileSync(todayPath, 'utf-8');
-    expect(content).toContain('title="Today"');
+    // Page uses a greeting header; verify it's the "today" tab, not "now"
+    expect(content).toContain('greetingHeader');
     expect(content).not.toMatch(/title=["']Now["']/);
   });
 

@@ -51,8 +51,8 @@ const BUCKET_RING_COLOR: Record<string, string> = {
 // SINGLE RING COMPONENT
 // ============================================================================
 
-const RING_SIZE = 62;
-const STROKE_WIDTH = 5;
+const RING_SIZE = 52;
+const STROKE_WIDTH = 4;
 const RADIUS = (RING_SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SubScreenHeader } from '../../components/SubScreenHeader';
+import { CollapsibleSection } from '../../components/common/CollapsibleSection';
 import { StorageKeys } from '../../utils/storageKeys';
 import { logError } from '../../utils/devLog';
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
@@ -224,8 +225,7 @@ export default function PatientScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={100}>
         <ScrollView style={styles.scroll}>
           {/* Basic Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>BASIC INFORMATION</Text>
+          <CollapsibleSection title="Basic Information" defaultExpanded>
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Name</Text>
@@ -314,11 +314,10 @@ export default function PatientScreen() {
                 )}
               </View>
             </View>
-          </View>
+          </CollapsibleSection>
 
           {/* Active Diagnoses */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>ACTIVE DIAGNOSES</Text>
+          <CollapsibleSection title="Active Diagnoses" badge={`${activeDiagnoses.length}`}>
             <View style={styles.infoCard}>
               {activeDiagnoses.length === 0 && (
                 <Text style={styles.emptyText}>No active diagnoses</Text>
@@ -373,12 +372,11 @@ export default function PatientScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </CollapsibleSection>
 
           {/* Resolved Diagnoses */}
           {resolvedDiagnoses.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>RESOLVED DIAGNOSES</Text>
+            <CollapsibleSection title="Resolved Diagnoses" badge={`${resolvedDiagnoses.length}`}>
               <View style={styles.infoCard}>
                 {resolvedDiagnoses.map((d, idx) => {
                   const realIdx = info.diagnoses.indexOf(d);
@@ -408,12 +406,11 @@ export default function PatientScreen() {
                   );
                 })}
               </View>
-            </View>
+            </CollapsibleSection>
           )}
 
           {/* Allergies */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>ALLERGIES</Text>
+          <CollapsibleSection title="Allergies" badge={`${info.allergies.length}`}>
             <View style={[styles.infoCard, styles.allergyCard]}>
               {info.allergies.length === 0 && !editing && (
                 <Text style={styles.emptyText}>No allergies reported</Text>
@@ -456,11 +453,10 @@ export default function PatientScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </CollapsibleSection>
 
           {/* Surgeries */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>SURGICAL HISTORY</Text>
+          <CollapsibleSection title="Surgical History" badge={`${info.surgeries.length}`}>
             <View style={styles.infoCard}>
               {info.surgeries.length === 0 && !editing && (
                 <Text style={styles.emptyText}>No surgeries recorded</Text>
@@ -505,11 +501,10 @@ export default function PatientScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </CollapsibleSection>
 
           {/* Hospitalizations */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>HOSPITALIZATIONS</Text>
+          <CollapsibleSection title="Hospitalizations" badge={`${info.hospitalizations.length}`}>
             <View style={styles.infoCard}>
               {info.hospitalizations.length === 0 && !editing && (
                 <Text style={styles.emptyText}>No hospitalizations recorded</Text>
@@ -554,7 +549,7 @@ export default function PatientScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </CollapsibleSection>
 
           {/* Edit / Done Button */}
           <TouchableOpacity

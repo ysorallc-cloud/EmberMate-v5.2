@@ -23,7 +23,7 @@ import {
   clearSampleData,
   SampleDataStatus,
 } from '../utils/sampleDataManager';
-import { resetSampleData } from '../utils/sampleDataGenerator';
+import { resetSampleData, seedScenario, SampleScenario } from '../utils/sampleDataGenerator';
 import { safeSetItem } from '../utils/safeStorage';
 import { StorageKeys } from '../utils/storageKeys';
 import {
@@ -128,6 +128,36 @@ export default function DataPrivacySettingsScreen() {
             } catch (error) {
               logError('DataPrivacySettingsScreen.handleReloadSampleData', error);
               Alert.alert('Error', 'Failed to reload sample data. Please try again.');
+            } finally {
+              setClearing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSeedScenario = (scenario: SampleScenario) => {
+    const labels: Record<SampleScenario, string> = {
+      stable: 'Stable — all tasks complete, normal vitals',
+      watch: 'Watch — high BP + 1 overdue non-critical item',
+      attention: 'Attention — medication overdue 90 minutes',
+    };
+    Alert.alert(
+      `Seed Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)}`,
+      labels[scenario],
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Apply',
+          onPress: async () => {
+            setClearing(true);
+            try {
+              await seedScenario(scenario);
+              Alert.alert('Scenario Applied', `Today page will now show Care Status: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)}.`, [{ text: 'OK' }]);
+            } catch (error) {
+              logError('DataPrivacySettings.seedScenario', error);
+              Alert.alert('Error', 'Failed to apply scenario.');
             } finally {
               setClearing(false);
             }
@@ -372,6 +402,29 @@ export default function DataPrivacySettingsScreen() {
                     <Text style={styles.reloadButtonIcon}>🔄</Text>
                     <Text style={styles.reloadButtonText}>Reload sample data</Text>
                   </TouchableOpacity>
+
+                  {/* ─── SCENARIO TESTING ─── */}
+                  <View style={{ paddingHorizontal: 14, paddingTop: 16 }}>
+                    <Text style={styles.sectionHeader}>TODAY PAGE SCENARIOS</Text>
+                    <Text style={styles.sectionDescription}>
+                      Force the Today page into a specific Care Status state for testing. Run "Reload Sample Data" first, then apply a scenario.
+                    </Text>
+                    {(['stable', 'watch', 'attention'] as SampleScenario[]).map(scenario => (
+                      <TouchableOpacity
+                        key={scenario}
+                        style={styles.scenarioButton}
+                        onPress={() => handleSeedScenario(scenario)}
+                        disabled={clearing}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.scenarioButtonText}>
+                          {scenario === 'stable' && '✓ Seed Stable'}
+                          {scenario === 'watch' && '◐ Seed Watch'}
+                          {scenario === 'attention' && '! Seed Attention'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </>
               ) : (
                 /* No Sample Data */
@@ -770,6 +823,23 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   reloadButtonText: {
     fontSize: 15,
+    fontWeight: '600',
+    color: c.accent,
+  },
+
+  // Scenario Buttons
+  scenarioButton: {
+    backgroundColor: c.glassDim,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  scenarioButtonText: {
+    fontSize: 14,
     fontWeight: '600',
     color: c.accent,
   },

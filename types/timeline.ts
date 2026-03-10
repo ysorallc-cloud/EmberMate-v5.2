@@ -31,6 +31,13 @@ export interface TimelineItem {
   appointmentId?: string;       // For appointment type
   wellnessChecks?: string[];    // For wellness type: ['sleep', 'mood', 'energy']
   vitalTypes?: string[];        // For vitals type: ['bp', 'glucose']
+
+  // Care plan instance data (populated for medication/wellness/vitals items)
+  itemType?: string;
+  itemName?: string;
+  itemDosage?: string;
+  carePlanItemId?: string;
+  instructions?: string;
 }
 
 // Wellness check data captured

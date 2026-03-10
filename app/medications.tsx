@@ -323,7 +323,7 @@ export default function MedicationsScreen() {
           style={styles.content}
           sections={(() => {
             if (loading || groupedMedications.length === 0) return [];
-            return [{ key: 'all', title: `ALL MEDICATIONS (${groupedMedications.length})`, data: groupedMedications }];
+            return [{ key: 'all', title: `ALL MEDICATIONS (${groupedMedications.length})`, data: expandedGroups.has('all') ? groupedMedications : [] }];
           })()}
           keyExtractor={(item) => `${item.name}-${item.dosage}`}
           refreshControl={
@@ -331,9 +331,22 @@ export default function MedicationsScreen() {
           }
           stickySectionHeadersEnabled={false}
           renderSectionHeader={({ section }) => (
-            <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.groupHeaderRow}
+              onPress={() => {
+                setExpandedGroups(prev => {
+                  const next = new Set(prev);
+                  next.has(section.key) ? next.delete(section.key) : next.add(section.key);
+                  return next;
+                });
+              }}
+              activeOpacity={0.7}
+            >
               <Text style={styles.sectionTitle}>{section.title}</Text>
-            </View>
+              <Text style={styles.sectionChevron}>
+                {expandedGroups.has(section.key) ? '−' : '+'}
+              </Text>
+            </TouchableOpacity>
           )}
           renderItem={({ item: group }) => {
             const isMultiDose = group.doses.length > 1;
@@ -590,12 +603,24 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
+    flex: 1,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     color: c.textMuted,
-    marginBottom: 12,
+  },
+  groupHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  sectionChevron: {
+    fontSize: 16,
+    color: c.textMuted,
+    fontWeight: '300',
   },
 
   // TAKE ALL BUTTON

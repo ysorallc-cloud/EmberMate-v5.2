@@ -23,6 +23,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    overflow: 'visible' as const,
   },
   titleContainer: {
     flex: 1,
@@ -46,6 +47,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   rightAction: {
     paddingTop: 2,
     paddingLeft: 12,
+    overflow: 'visible' as const,
+    zIndex: 1,
   },
   purpose: {
     fontSize: 12,

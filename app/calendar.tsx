@@ -173,7 +173,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   backButton: {
     width: 40,

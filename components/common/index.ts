@@ -21,3 +21,4 @@ export { AIInsightCard, AIInsightCardLoading, AIInsightCardEmpty } from './AIIns
 export type { AIInsightCardProps } from './AIInsightCard';
 export { SampleDataBanner } from './SampleDataBanner';
 export type { SampleDataBannerProps } from './SampleDataBanner';
+export { CollapsibleSection } from './CollapsibleSection';

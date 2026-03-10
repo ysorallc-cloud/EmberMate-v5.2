@@ -3,7 +3,7 @@
 // Links to /care-report?scope=handoff
 // ============================================================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, BorderRadius, Spacing } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -16,10 +16,8 @@ interface HandoffPromptCardProps {
 export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedCount }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [dismissed, setDismissed] = useState(false);
-
   const hour = new Date().getHours();
-  if (hour < 16 || completedCount < 1 || dismissed) return null;
+  if (hour < 16 || completedCount < 1) return null;
 
   return (
     <TouchableOpacity
@@ -33,21 +31,19 @@ export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedC
       <View style={styles.content}>
         <Text style={styles.icon}>{'\uD83D\uDCCB'}</Text>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>End of shift?</Text>
+          <Text style={styles.title}>Generate handoff report</Text>
           <Text style={styles.subtitle}>
-            Generate handoff for tonight's caregiver ({completedCount} item{completedCount !== 1 ? 's' : ''} completed)
+            {completedCount} item{completedCount !== 1 ? 's' : ''} completed
           </Text>
         </View>
         <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation?.();
-            setDismissed(true);
-          }}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityLabel="Dismiss handoff prompt"
+          style={styles.createButton}
+          onPress={() => navigate('/care-report?scope=handoff')}
+          activeOpacity={0.7}
+          accessibilityLabel="Create handoff report"
           accessibilityRole="button"
         >
-          <Text style={styles.dismissIcon}>{'\u2715'}</Text>
+          <Text style={styles.createButtonText}>Create</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -56,9 +52,9 @@ export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedC
 
 const createStyles = (c: typeof Colors) => StyleSheet.create({
   container: {
-    backgroundColor: c.purpleFaint,
+    backgroundColor: c.accentDim,
     borderWidth: 1,
-    borderColor: c.purpleBorder,
+    borderColor: c.accentBorder,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     marginBottom: 12,
@@ -85,9 +81,15 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     marginTop: 2,
     lineHeight: 17,
   },
-  dismissIcon: {
+  createButton: {
+    backgroundColor: c.accent,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  createButtonText: {
     fontSize: 12,
-    color: c.textMuted,
-    padding: 4,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

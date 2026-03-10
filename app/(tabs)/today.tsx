@@ -18,7 +18,7 @@ import { navigate } from '../../lib/navigate';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getMedications, Medication } from '../../utils/medicationStorage';
+import { getMedications, getMedicationLogs, Medication } from '../../utils/medicationStorage';
 import { getUpcomingAppointments, Appointment } from '../../utils/appointmentStorage';
 import { getDailyTracking } from '../../utils/dailyTrackingStorage';
 import {
@@ -29,7 +29,6 @@ import {
 } from '../../utils/centralStorage';
 import { safeGetItem } from '../../utils/safeStorage';
 import { StorageKeys } from '../../utils/storageKeys';
-import { getMedicationLogs } from '../../utils/medicationStorage';
 import { updatePatient } from '../../storage/patientRegistry';
 import { checkTodayVitalsExceedances } from '../../utils/vitalsGuidance';
 import { getVitalsByType } from '../../utils/vitalsStorage';
@@ -193,117 +192,55 @@ function SectionHeaderRow({
 
 function CareStatusBanner({
   status,
-  activeTab,
-  onTabPress,
   styles: s,
   colors: c,
   insightMessage,
 }: {
   status: 'stable' | 'watch' | 'attention';
-  activeTab: 'stable' | 'watch' | 'attention';
-  onTabPress: (tab: 'stable' | 'watch' | 'attention') => void;
   styles: any;
   colors: typeof Colors;
   insightMessage?: string | null;
 }) {
   const config = {
-    stable:    { label: 'Care Status: Stable',          color: c.green,   bg: c.greenTint,    border: c.greenBorder,  icon: '\u2713' },
-    watch:     { label: 'Care Status: Watch',            color: c.amber,   bg: c.amberLight,   border: c.amberBorder,  icon: '\u25D0' },
-    attention: { label: 'Care Status: Needs Attention',  color: c.redBright, bg: c.redLight,   border: c.redBorder,    icon: '!' },
+    stable:    { label: 'Stable',          color: c.green,     bg: c.greenTint,  border: c.greenBorder, icon: '\u2713' },
+    watch:     { label: 'Watch',            color: c.amber,     bg: c.amberLight, border: c.amberBorder, icon: '\u25D0' },
+    attention: { label: 'Needs Attention',  color: c.redBright, bg: c.redLight,   border: c.redBorder,   icon: '!' },
   }[status];
 
-  const sub = insightMessage
-    ?? {
-        stable:    null,
-        watch:     'Some items need attention below',
-        attention: 'Urgent items require action now',
-       }[status];
+  const sub = insightMessage ?? null;
 
   return (
-    <View>
-      {/* Banner */}
-      <View style={[s.careStatusBanner, { backgroundColor: config.bg, borderColor: config.border }]}>
-        <View style={[s.careStatusIcon, { backgroundColor: config.color + '33', borderColor: config.border }]}>
-          <Text style={[s.careStatusIconText, { color: config.color }]}>{config.icon}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.careStatusLabel, { color: config.color }]}>{config.label}</Text>
-          {sub && (
-            <Text style={s.careStatusSub}>{sub}</Text>
-          )}
-        </View>
+    <View
+      style={{
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        gap: 10,
+        padding: 12,
+        paddingHorizontal: 14,
+        borderRadius: 14,
+        backgroundColor: config.bg,
+        borderWidth: 1,
+        borderColor: config.border,
+        marginBottom: 14,
+      }}
+      accessibilityLabel={`Care status: ${config.label}`}
+    >
+      <View style={{
+        width: 28, height: 28, borderRadius: 14,
+        backgroundColor: config.color + '33',
+        borderWidth: 1, borderColor: config.border,
+        alignItems: 'center' as const, justifyContent: 'center' as const,
+      }}>
+        <Text style={{ fontSize: 12, fontWeight: '700' as const, color: config.color }}>{config.icon}</Text>
       </View>
-
-      {/* Tabs */}
-      <View style={[s.careStatusTabs, { borderColor: config.border }]}>
-        {(['stable', 'watch', 'attention'] as const).map((tab, i) => {
-          const tabColor = { stable: c.green, watch: c.amber, attention: c.redBright }[tab];
-          const active = activeTab === tab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                s.careStatusTab,
-                i < 2 && s.careStatusTabBorder,
-                active && { backgroundColor: tabColor + '22' },
-              ]}
-              onPress={() => onTabPress(tab)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={`${tab} status tab`}
-            >
-              <Text style={[s.careStatusTabText, { color: active ? tabColor : c.textMuted }]}>
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </Text>
-              {active && (
-                <View style={[s.careStatusTabBar, { backgroundColor: tabColor }]} />
-              )}
-              {!active && tab !== 'stable' && (
-                <View style={[s.careStatusTabDot, { backgroundColor: tabColor, opacity: 0.5 }]} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 13, fontWeight: '600' as const, color: config.color }}>{config.label}</Text>
+        {sub && <Text style={{ fontSize: 11, color: c.textSecondary, marginTop: 1 }} numberOfLines={1}>{sub}</Text>}
       </View>
     </View>
   );
 }
 
-// ============================================================================
-// INLINE COMPONENT — Watch Section (items needing attention)
-// ============================================================================
-
-function WatchSection({
-  items,
-  status,
-  styles: s,
-  colors: c,
-}: {
-  items: { icon: string; label: string; detail: string; type: 'overdue' | 'vitals' }[];
-  status: 'watch' | 'attention';
-  styles: any;
-  colors: typeof Colors;
-}) {
-  const borderColor = status === 'attention' ? c.redBorder : c.amberBorder;
-  const headerColor = status === 'attention' ? c.redBright : c.amber;
-
-  return (
-    <View style={[s.watchSection, { borderColor }]}>
-      <Text style={[s.watchSectionHeader, { color: headerColor }]}>
-        {status === 'attention' ? 'Needs Attention' : 'Items to Watch'}
-      </Text>
-      {items.map((item, i) => (
-        <View key={i} style={[s.watchRow, i < items.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}>
-          <Text style={s.watchIcon}>{item.icon}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={s.watchLabel}>{item.label}</Text>
-            <Text style={s.watchDetail}>{item.detail}</Text>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
 
 export default function NowScreen() {
   const { colors } = useTheme();
@@ -375,7 +312,8 @@ export default function NowScreen() {
   const [vitalsGuidanceDismissed, setVitalsGuidanceDismissed] = useState(false);
 
   // Timeline collapse state — default expanded so users see their schedule
-  const [timelineCollapsed, setTimelineCollapsed] = useState(false);
+  const [timelineCollapsed, setTimelineCollapsed] = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   // Handoff / Patterns / Before Bed (mirrored from Journal)
   const [brief, setBrief] = useState<CareBrief | null>(null);
@@ -520,62 +458,6 @@ export default function NowScreen() {
     return 'stable';
   }, [todayTimeline.overdue, vitalsExceedances, brief]);
 
-  // Status tab state + scroll-to-watch behavior
-  // Initialize directly from careStatus — avoids tab/banner mismatch on first render
-  const [activeStatusTab, setActiveStatusTab] = useState<'stable' | 'watch' | 'attention'>(careStatus);
-  const prevCareStatus = useRef(careStatus);
-  const watchSectionRef = useRef<View>(null);
-
-  useEffect(() => {
-    // Only auto-sync if the user hasn't manually overridden
-    // (i.e., only sync when careStatus escalates, not when user taps a tab)
-    if (careStatus !== prevCareStatus.current) {
-      prevCareStatus.current = careStatus;
-      setActiveStatusTab(careStatus);
-    }
-  }, [careStatus]);
-
-  const handleStatusTabPress = useCallback((tab: 'stable' | 'watch' | 'attention') => {
-    setActiveStatusTab(tab);
-    if (tab !== 'stable' && scrollViewRef.current) {
-      setTimeout(() => {
-        watchSectionRef.current?.measureLayout(
-          scrollViewRef.current as any,
-          (_, y) => scrollViewRef.current?.scrollTo({ y: y - 16, animated: true }),
-          () => {}
-        );
-      }, 80);
-    }
-  }, []);
-
-  // Watch items — overdue instances + vitals exceedances
-  const watchItems = useMemo(() => {
-    const items: { icon: string; label: string; detail: string; type: 'overdue' | 'vitals' }[] = [];
-
-    for (const inst of todayTimeline.overdue) {
-      const typeIcon: Record<string, string> = {
-        medication: '\uD83D\uDC8A', vitals: '\uD83E\uDE7A', nutrition: '\uD83C\uDF7D\uFE0F',
-        wellness: '\uD83E\uDDD8', activity: '\uD83C\uDFC3', sleep: '\uD83D\uDE34',
-      };
-      items.push({
-        icon: typeIcon[inst.itemType] || '\u26A0\uFE0F',
-        label: inst.title || inst.itemType,
-        detail: `Scheduled ${formatTime(inst.scheduledTime)} \u2014 overdue`,
-        type: 'overdue',
-      });
-    }
-
-    for (const exc of vitalsExceedances) {
-      items.push({
-        icon: '\uD83E\uDE7A',
-        label: exc.type || 'Vitals',
-        detail: exc.message || 'Out of expected range',
-        type: 'vitals',
-      });
-    }
-
-    return items;
-  }, [todayTimeline.overdue, vitalsExceedances]);
 
   // Completion percentage for hero card
   const completionPct = useMemo(() => {
@@ -833,6 +715,7 @@ export default function NowScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setHistoryExpanded(false);
     await loadData();
     setRefreshing(false);
   }, []);
@@ -880,6 +763,7 @@ export default function NowScreen() {
   function buildBeforeBedItems(): BeforeBedItem[] {
     const items: BeforeBedItem[] = [];
     const seenRoutes = new Set<string>();
+    const seenLabels = new Set<string>();
 
     if (careTasksState) {
       const eveningTasks = careTasksState.byWindow['evening'] || [];
@@ -889,6 +773,9 @@ export default function NowScreen() {
           const route = task.primaryAction?.route || '';
           if (route && seenRoutes.has(route)) continue;
           if (route) seenRoutes.add(route);
+          const normalizedText = (task.title || '').toLowerCase().trim();
+          if (normalizedText && seenLabels.has(normalizedText)) continue;
+          if (normalizedText) seenLabels.add(normalizedText);
           items.push({
             icon: task.emoji || '\u2705',
             text: task.title,
@@ -907,6 +794,8 @@ export default function NowScreen() {
         items.push({ icon: '\uD83D\uDE34', text: `Log sleep when ${pronoun} go${pronoun === 'they' ? '' : 'es'} to bed`, route: sleepRoute });
       }
     }
+
+    if (seenLabels.has('evening wellness check')) return items;
 
     const hasEvening = brief?.mood.eveningWellness != null;
     if (brief && !hasEvening && new Date().getHours() >= 17) {
@@ -970,10 +859,12 @@ export default function NowScreen() {
             )}
           </TouchableOpacity>
         </View>
-        <PatientSwitcherModal
-          visible={showPatientSwitcher}
-          onClose={() => setShowPatientSwitcher(false)}
-        />
+        {showPatientSwitcher && (
+          <PatientSwitcherModal
+            visible={showPatientSwitcher}
+            onClose={() => setShowPatientSwitcher(false)}
+          />
+        )}
 
         {/* Sample Data Banner */}
         {isSampleMode && (
@@ -1018,12 +909,14 @@ export default function NowScreen() {
         )}
 
         {/* Coffee Moment Modal (banner removed — footer pause link is the entry point) */}
-        <CoffeeMomentMinimal
-          visible={coffeeMoment.showModal}
-          onClose={coffeeMoment.closeModal}
-          microcopy="Pause for a minute"
-          duration={60}
-        />
+        {coffeeMoment.showModal && (
+          <CoffeeMomentMinimal
+            visible={coffeeMoment.showModal}
+            onClose={coffeeMoment.closeModal}
+            microcopy="Pause for a minute"
+            duration={60}
+          />
+        )}
 
         {/* Onboarding Prompt */}
         {showOnboarding && (
@@ -1035,11 +928,16 @@ export default function NowScreen() {
 
         <View style={styles.content}>
 
+          {/* ═══ URGENT ACTION — MEDS BANNER ═══ */}
+          <MorningMedsBanner
+            pendingCount={allPending.filter((i: any) => i.itemType === 'medication').length}
+            pendingInstanceIds={allPending.filter((i: any) => i.itemType === 'medication').map((i: any) => i.id)}
+            onConfirmAll={handleBatchMedConfirm}
+          />
+
           {/* ═══ CARE STATUS BANNER ═══ */}
           <CareStatusBanner
             status={careStatus}
-            activeTab={activeStatusTab}
-            onTabPress={handleStatusTabPress}
             styles={styles}
             colors={colors}
             insightMessage={insight ? insight.message : null}
@@ -1085,35 +983,8 @@ export default function NowScreen() {
               onManagePress={() => navigate('/care-plan')}
               patientName={patientName}
             />
-            {todayTimeline?.nextUp && (
-              <TouchableOpacity
-                style={styles.nextUpBar}
-                onPress={() => todayTimeline.nextUp && handleTimelineItemPress(todayTimeline.nextUp)}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={`Next: ${todayTimeline.nextUp.title || todayTimeline.nextUp.itemName}`}
-              >
-                <View style={styles.nextUpDot} />
-                <Text style={styles.nextUpText} numberOfLines={1}>
-                  {'Next: '}
-                  <Text style={styles.nextUpName}>
-                    {todayTimeline.nextUp.title || todayTimeline.nextUp.itemName || 'Task'}
-                  </Text>
-                  {todayTimeline.nextUp.scheduledTime
-                    ? ` at ${formatTime(todayTimeline.nextUp.scheduledTime)}`
-                    : ''}
-                </Text>
-                <Text style={styles.nextUpAction}>Log {'\u2192'}</Text>
-              </TouchableOpacity>
-            )}
           </LinearGradient>
 
-          {/* ═══ WATCH SECTION (scroll target) ═══ */}
-          <View ref={watchSectionRef} collapsable={false}>
-            {activeStatusTab !== 'stable' && watchItems.length > 0 && (
-              <WatchSection items={watchItems} status={activeStatusTab as 'watch' | 'attention'} styles={styles} colors={colors} />
-            )}
-          </View>
 
           {/* ═══ ZONE 2: TODAY'S SCHEDULE ═══ */}
           <SectionHeaderRow
@@ -1163,13 +1034,6 @@ export default function NowScreen() {
             )
           ) : (
             <View style={styles.sectionCard}>
-              {/* Morning Meds Banner — batch confirm */}
-              <MorningMedsBanner
-                pendingCount={allPending.filter((i: any) => i.itemType === 'medication').length}
-                pendingInstanceIds={allPending.filter((i: any) => i.itemType === 'medication').map((i: any) => i.id)}
-                onConfirmAll={handleBatchMedConfirm}
-              />
-
               {/* Timeline — what's happening today */}
               <TimelineSection
                 allPending={allPending}
@@ -1218,15 +1082,34 @@ export default function NowScreen() {
             if (handoffNotes.length === 0) return null;
             return (
               <>
-                <SectionHeaderRow title="What's Happened" styles={styles} />
-                <View style={styles.sectionCard}>
-                  {handoffNotes.map((item, i) => (
-                    <View key={`handoff-${i}`} style={styles.handoffRow}>
-                      <Text style={styles.handoffIcon}>{item.icon}</Text>
-                      <Text style={styles.handoffText}>{item.text}</Text>
+                {historyExpanded ? (
+                  <>
+                    <SectionHeaderRow title="What's Happened" styles={styles} />
+                    <View style={styles.sectionCard}>
+                      {handoffNotes.map((item, i) => (
+                        <View key={`handoff-${i}`} style={styles.handoffRow}>
+                          <Text style={styles.handoffIcon}>{item.icon}</Text>
+                          <Text style={styles.handoffText}>{item.text}</Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.sectionCard, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 }]}
+                    onPress={() => setHistoryExpanded(true)}
+                    activeOpacity={0.7}
+                    accessibilityLabel={`${handoffNotes.length} items logged today. Tap to expand.`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                      {handoffNotes.length} item{handoffNotes.length !== 1 ? 's' : ''} logged today
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.accent, fontWeight: '500' }}>
+                      View ›
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </>
             );
           })()}
@@ -1332,10 +1215,12 @@ export default function NowScreen() {
         />
       )}
 
-      <QuickAddSheet
-        visible={showQuickAdd}
-        onClose={() => setShowQuickAdd(false)}
-      />
+      {showQuickAdd && (
+        <QuickAddSheet
+          visible={showQuickAdd}
+          onClose={() => setShowQuickAdd(false)}
+        />
+      )}
     </View>
   );
 }
@@ -1503,66 +1388,14 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     overflow: 'hidden' as const,
   },
 
-  // ── Care Status Banner ──
-  careStatusBanner: {
-    borderRadius: 18, borderWidth: 1, borderBottomWidth: 0,
-    borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
-    padding: 14, flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 12,
-  },
-  careStatusIcon: {
-    width: 36, height: 36, borderRadius: 18, borderWidth: 1,
-    alignItems: 'center' as const, justifyContent: 'center' as const,
-  },
-  careStatusIconText: { fontSize: 16, fontWeight: '700' as const },
-  careStatusLabel: { fontSize: 14, fontWeight: '700' as const, marginBottom: 3 },
-  careStatusSub: { fontSize: 12, color: c.textSecondary, lineHeight: 18 },
-  careStatusTabs: {
-    flexDirection: 'row' as const, borderWidth: 1, borderTopWidth: 0,
-    borderBottomLeftRadius: 18, borderBottomRightRadius: 18,
-    overflow: 'hidden' as const, marginBottom: 14,
-    backgroundColor: c.glass,
-  },
-  careStatusTab: {
-    flex: 1, paddingVertical: 9, alignItems: 'center' as const,
-    justifyContent: 'center' as const, position: 'relative' as const,
-  },
-  careStatusTabBorder: {
-    borderRightWidth: 1, borderRightColor: c.glassBorder,
-  },
-  careStatusTabText: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.3 },
-  careStatusTabBar: {
-    position: 'absolute' as const, bottom: 0, left: '20%' as any, right: '20%' as any,
-    height: 2, borderRadius: 1,
-  },
-  careStatusTabDot: {
-    width: 5, height: 5, borderRadius: 3, marginTop: 3,
-  },
-
-  // ── Watch Section ──
-  watchSection: {
-    borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 14,
-    backgroundColor: c.glass,
-  },
-  watchSectionHeader: {
-    fontSize: 11, fontWeight: '700' as const, letterSpacing: 1,
-    textTransform: 'uppercase' as const, marginBottom: 10,
-  },
-  watchRow: {
-    flexDirection: 'row' as const, alignItems: 'center' as const,
-    gap: 10, paddingVertical: 10,
-  },
-  watchIcon: { fontSize: 18 },
-  watchLabel: { fontSize: 14, fontWeight: '600' as const, color: c.textPrimary },
-  watchDetail: { fontSize: 12, color: c.textMuted, marginTop: 2 },
-
   // ── Hero Completion Row ──
   heroCompletionRow: {
     flexDirection: 'row' as const, alignItems: 'flex-end' as const,
     gap: 4, marginBottom: 16,
   },
   heroCompletionNumber: {
-    fontSize: 52, fontWeight: '700' as const, color: c.accent,
-    letterSpacing: -2, lineHeight: 52,
+    fontSize: 36, fontWeight: '700' as const, color: c.accent,
+    letterSpacing: -2, lineHeight: 36,
   },
   heroCompletionDenom: {
     fontSize: 18, color: c.textMuted, marginBottom: 6,
@@ -1574,46 +1407,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   heroCompletionPct: {
     fontSize: 11, fontWeight: '700' as const, color: c.accent,
-  },
-
-  // ── Next Up Bar ──
-  nextUpBar: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 10,
-    marginTop: 12,
-    padding: 10,
-    paddingHorizontal: 14,
-    backgroundColor: 'rgba(0,0,0,0.30)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  nextUpDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: c.accent,
-    shadowColor: c.accent,
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-    flexShrink: 0,
-  },
-  nextUpText: {
-    flex: 1,
-    fontSize: 12,
-    color: c.textSecondary,
-  },
-  nextUpName: {
-    color: c.textPrimary,
-    fontWeight: '600' as const,
-  },
-  nextUpAction: {
-    fontSize: 12,
-    color: c.accent,
-    fontWeight: '600' as const,
-    flexShrink: 0,
   },
 
   // ── Hero Card (ProgressRings gradient) ──

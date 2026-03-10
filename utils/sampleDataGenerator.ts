@@ -781,6 +781,164 @@ export const resetSampleData = async (): Promise<void> => {
   await initializeSampleData();
 };
 
+// ============================================================================
+// SCENARIO SEEDING — Force Today page into specific care status states
+// ============================================================================
+
+export type SampleScenario = 'stable' | 'watch' | 'attention';
+
+/**
+ * Seed today's data to force a specific careStatus on the Today page.
+ *
+ * stable:    Morning complete, no vitals flags. Default state.
+ * watch:     Today vitals with high BP (systolic 148). One non-critical instance overdue.
+ * attention: One medication instance set to pending with scheduledTime 90 min ago.
+ *            Triggers isClinicalCritical + minutesLate >= CRITICAL_OVERDUE_MINUTES(30).
+ */
+export async function seedScenario(scenario: SampleScenario): Promise<void> {
+  const {
+    listDailyInstances,
+    upsertDailyInstances,
+    logInstanceCompletion,
+    DEFAULT_PATIENT_ID,
+  } = await import('../storage/carePlanRepo');
+  const { getTodayDateString } = await import('../services/carePlanGenerator');
+  const { encryptedSetRaw } = await import('./safeStorage');
+  const { scopedKey, StorageKeys } = await import('./storageKeys');
+
+  const today = getTodayDateString();
+  const instances = await listDailyInstances(DEFAULT_PATIENT_ID, today);
+
+  // ── Stable: complete everything pending ──
+  if (scenario === 'stable') {
+    for (const inst of instances) {
+      if (inst.status === 'pending') {
+        await logInstanceCompletion(DEFAULT_PATIENT_ID, today, inst.id, 'completed');
+      }
+    }
+    // Write normal vitals so no exceedances fire
+    const vitalsLog = {
+      id: `svl-scenario-stable`,
+      timestamp: new Date().toISOString(),
+      systolic: 122,
+      diastolic: 78,
+      heartRate: 72,
+      glucose: 108,
+      oxygen: 98,
+      temperature: 98.4,
+      weight: 194,
+      origin: 'sample' as const,
+    };
+    const vitalsKey = scopedKey(StorageKeys.CENTRAL_VITALS_LOGS, DEFAULT_PATIENT_ID);
+    await encryptedSetRaw(vitalsKey, JSON.stringify([vitalsLog]));
+    return;
+  }
+
+  // ── Watch: high BP vitals + one non-critical instance overdue ──
+  if (scenario === 'watch') {
+    // Complete morning meds so they don't escalate to attention
+    for (const inst of instances) {
+      if (inst.itemType === 'medication' && inst.windowLabel === 'morning' && inst.status === 'pending') {
+        await logInstanceCompletion(DEFAULT_PATIENT_ID, today, inst.id, 'completed');
+      }
+    }
+
+    // Leave one wellness/hydration instance as pending with past scheduledTime
+    const nonCritical = instances.find(
+      i => (i.itemType === 'wellness' || i.itemType === 'hydration') && i.status === 'pending'
+    );
+    if (nonCritical) {
+      const overdueTime = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // 45 min ago
+      await upsertDailyInstances(DEFAULT_PATIENT_ID, today, [{
+        ...nonCritical,
+        status: 'pending',
+        scheduledTime: overdueTime,
+      }]);
+    }
+
+    // Write today vitals with high BP — systolic 148 exceeds threshold of 140
+    const highBPLog = {
+      id: `svl-scenario-watch`,
+      timestamp: new Date().toISOString(),
+      systolic: 148,
+      diastolic: 94,
+      heartRate: 88,
+      glucose: 145,
+      oxygen: 96,
+      temperature: 98.9,
+      weight: 194,
+      origin: 'sample' as const,
+    };
+    const vitalsKey = scopedKey(StorageKeys.CENTRAL_VITALS_LOGS, DEFAULT_PATIENT_ID);
+    await encryptedSetRaw(vitalsKey, JSON.stringify([highBPLog]));
+
+    // Also write to @vitals_readings so checkTodayVitalsExceedances() picks it up
+    const { safeSetItem } = await import('./safeStorage');
+    await safeSetItem('@vitals_readings', [
+      { id: 'sv-scenario-sys',  type: 'systolic',  value: 148, unit: 'mmHg', timestamp: new Date().toISOString(), origin: 'sample' },
+      { id: 'sv-scenario-dia',  type: 'diastolic', value: 94,  unit: 'mmHg', timestamp: new Date().toISOString(), origin: 'sample' },
+      { id: 'sv-scenario-hr',   type: 'heartRate', value: 88,  unit: 'bpm',  timestamp: new Date().toISOString(), origin: 'sample' },
+      { id: 'sv-scenario-temp', type: 'temperature', value: 98.9, unit: '°F', timestamp: new Date().toISOString(), origin: 'sample' },
+    ]);
+    return;
+  }
+
+  // ── Attention: medication instance overdue 90 min ──
+  if (scenario === 'attention') {
+    // Complete non-medication instances so only meds drive the status
+    for (const inst of instances) {
+      if (inst.itemType !== 'medication' && inst.status === 'pending') {
+        await logInstanceCompletion(DEFAULT_PATIENT_ID, today, inst.id, 'completed');
+      }
+    }
+
+    // Set one critical medication to pending with scheduledTime 90 min in the past
+    const medInstance = instances.find(i => i.itemType === 'medication' && i.status !== 'missed');
+    if (medInstance) {
+      const overdueTime = new Date(Date.now() - 90 * 60 * 1000).toISOString(); // 90 min ago
+      await upsertDailyInstances(DEFAULT_PATIENT_ID, today, [{
+        ...medInstance,
+        status: 'pending',
+        scheduledTime: overdueTime,
+      }]);
+    } else {
+      // Fallback: no vitals logged today + 2 overdue non-critical instances
+      const noVitalsKey = scopedKey(StorageKeys.CENTRAL_VITALS_LOGS, DEFAULT_PATIENT_ID);
+      await encryptedSetRaw(noVitalsKey, JSON.stringify([]));
+
+      let count = 0;
+      for (const inst of instances) {
+        if (count >= 2) break;
+        if (inst.status === 'pending') {
+          const overdueTime = new Date(Date.now() - 90 * 60 * 1000).toISOString();
+          await upsertDailyInstances(DEFAULT_PATIENT_ID, today, [{
+            ...inst,
+            status: 'pending',
+            scheduledTime: overdueTime,
+          }]);
+          count++;
+        }
+      }
+    }
+
+    // Write normal vitals (attention is driven by overdue meds, not vitals)
+    const normalVitalsLog = {
+      id: `svl-scenario-attention`,
+      timestamp: new Date().toISOString(),
+      systolic: 128,
+      diastolic: 80,
+      heartRate: 74,
+      glucose: 118,
+      oxygen: 97,
+      temperature: 98.6,
+      weight: 194,
+      origin: 'sample' as const,
+    };
+    const vitalsKey = scopedKey(StorageKeys.CENTRAL_VITALS_LOGS, DEFAULT_PATIENT_ID);
+    await encryptedSetRaw(vitalsKey, JSON.stringify([normalVitalsLog]));
+  }
+}
+
 /**
  * Generate sample correlation data for testing
  * Creates 30 days of synthetic data with intentional patterns:

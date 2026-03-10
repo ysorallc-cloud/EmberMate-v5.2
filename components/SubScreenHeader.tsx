@@ -23,8 +23,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
   titleBlock: {
     flex: 1,

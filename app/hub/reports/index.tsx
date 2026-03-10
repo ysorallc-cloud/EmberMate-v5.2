@@ -128,10 +128,14 @@ export default function ReportsHub() {
                     ]}
                     onPress={() => {
                       if (!report.route) {
-                        Alert.alert(report.name, 'This report is coming in a future update.');
-                      } else {
-                        navigate(report.route);
+                        Alert.alert(
+                          `${report.name}`,
+                          'This report is coming in a future update.',
+                          [{ text: 'OK' }]
+                        );
+                        return;
                       }
+                      navigate(report.route);
                     }}
                     activeOpacity={0.7}
                     accessibilityLabel={`${report.name} report, ${report.badge}`}

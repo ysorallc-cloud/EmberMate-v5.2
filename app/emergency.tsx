@@ -303,7 +303,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   gradient: { flex: 1 },
   scrollView: { flex: 1, paddingHorizontal: Spacing.xl },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: Platform.OS === 'android' ? 20 : 0, paddingBottom: Spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, paddingBottom: Spacing.md },
   backButton: {
     width: 44,
     height: 44,
