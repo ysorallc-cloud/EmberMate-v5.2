@@ -48,6 +48,8 @@ import {
   generateEnhancedNarrative,
   JournalReflection,
 } from '../../utils/journalReflections';
+import { useCoffeeMoment } from '../../hooks/useCoffeeMoment';
+import { CoffeeMomentMinimal } from '../../components/CoffeeMomentMinimal';
 
 // ============================================================================
 // HELPERS
@@ -161,6 +163,7 @@ export default function JournalTab() {
   const [brief, setBrief] = useState<CareBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [reflectionsExpanded, setReflectionsExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [todayNotes, setTodayNotes] = useState<NotesLog[]>([]);
@@ -176,6 +179,7 @@ export default function JournalTab() {
   const [dailyReport, setDailyReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
   const [clinicalReport, setClinicalReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const coffeeMoment = useCoffeeMoment(0, false);
 
   const loadReport = useCallback(async () => {
     try {
@@ -422,7 +426,8 @@ export default function JournalTab() {
 
   function getSleepValue(): string {
     if (!brief?.sleep.logged) return '\u2014';
-    if (brief.sleep.hours != null) return `${brief.sleep.hours}h`;
+    if (brief.sleep.hours != null && brief.sleep.hours > 0) return `${brief.sleep.hours}h`;
+    if (brief.sleep.hours === 0) return '\u2014';
     return 'Logged';
   }
 
@@ -667,7 +672,6 @@ export default function JournalTab() {
           <ScreenHeader
             title="Journal"
             subtitle={`${dayName}, ${dateStr}`}
-            purpose="What today's care means."
             style={s.journalHeader}
             rightAction={
               <View style={s.headerRightRow}>
@@ -766,7 +770,7 @@ export default function JournalTab() {
               <View style={s.sectionHeader}>
                 <Text style={s.sectionTitle}>What Stands Out</Text>
               </View>
-              {reflections.map((ref) => {
+              {(reflectionsExpanded ? reflections : reflections.slice(0, 2)).map((ref) => {
                 const isAttention = ref.category === 'nutrition' || ref.category === 'hydration';
                 return (
                   <View
@@ -786,6 +790,17 @@ export default function JournalTab() {
                   </View>
                 );
               })}
+              {reflections.length > 2 && !reflectionsExpanded && (
+                <TouchableOpacity
+                  onPress={() => setReflectionsExpanded(true)}
+                  style={s.showMoreLink}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.showMoreText}>
+                    Show {reflections.length - 2} more {'\u203A'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
 
@@ -829,9 +844,13 @@ export default function JournalTab() {
                 <Text style={s.appointmentIcon}>{'\uD83D\uDCC5'}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={s.appointmentTitle}>
-                    {brief.nextAppointment.title || 'Upcoming Appointment'}
+                    {brief.nextAppointment.provider
+                      ? `${brief.nextAppointment.specialty || 'Appointment'} — ${brief.nextAppointment.provider}`
+                      : 'Upcoming Appointment'}
                   </Text>
                   <Text style={s.appointmentDate}>
+                    {new Date(brief.nextAppointment.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                    {' \u00B7 '}
                     {daysUntilAppt === 0 ? 'Today' : daysUntilAppt === 1 ? 'Tomorrow' : `In ${daysUntilAppt} days`}
                   </Text>
                 </View>
@@ -877,6 +896,19 @@ export default function JournalTab() {
             </View>
           )}
 
+          {/* ─── CAREGIVER PAUSE ─── */}
+          <TouchableOpacity
+            onPress={coffeeMoment.startReset}
+            style={s.coffeePauseLink}
+            activeOpacity={0.7}
+            accessibilityLabel="Take a 1-minute breathing pause"
+            accessibilityRole="button"
+          >
+            <Text style={s.coffeePauseLinkText}>
+              {'\u2615'}  Take a 1-minute pause
+            </Text>
+          </TouchableOpacity>
+
           {/* ─── TIMESTAMP ─── */}
           {brief && (
             <Text style={s.timestamp}>
@@ -907,6 +939,15 @@ export default function JournalTab() {
         onClose={() => setShowClinicalPreview(false)}
         exporting={exporting}
       />
+      {coffeeMoment.showModal && (
+        <CoffeeMomentMinimal
+          visible={coffeeMoment.showModal}
+          onClose={coffeeMoment.closeModal}
+          microcopy="Pause for a minute"
+          duration={60}
+          encouragement={coffeeMoment.encouragement}
+        />
+      )}
     </View>
   );
 }
@@ -1282,13 +1323,44 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: c.purpleBright,
   },
 
+  // ─── CAREGIVER PAUSE LINK ───
+  coffeePauseLink: {
+    alignSelf: 'center' as const,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: c.glassDim,
+    borderWidth: 1,
+    borderColor: c.glassBorder,
+  },
+  coffeePauseLinkText: {
+    fontSize: 13,
+    color: c.textSecondary,
+    fontWeight: '500' as const,
+  },
+
   // ─── TIMESTAMP ───
   timestamp: {
     fontSize: 10,
     color: c.textTertiary,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     marginTop: 16,
     lineHeight: 16,
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
+  },
+
+  // ── Show more link ──
+  showMoreLink: {
+    alignSelf: 'center' as const,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  showMoreText: {
+    fontSize: 13,
+    color: c.accent,
+    fontWeight: '500' as const,
   },
 });

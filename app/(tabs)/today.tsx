@@ -145,25 +145,25 @@ function SectionHeaderRow({
   styles: ReturnType<typeof createStyles>;
 }) {
   return (
-    <View style={s.sectionHeaderRow}>
-      {onToggleCollapse ? (
-        <TouchableOpacity
-          onPress={onToggleCollapse}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          accessibilityRole="button"
-          accessibilityLabel={`${title}, ${collapsed ? 'collapsed' : 'expanded'}`}
-          accessibilityState={{ expanded: !collapsed }}
-        >
-          <Text style={s.sectionHeaderTitle}>{title}</Text>
-          <Text style={{ fontSize: 12, color: Colors.textMuted }}>{collapsed ? '\u25B6' : '\u25BC'}</Text>
-        </TouchableOpacity>
-      ) : (
+    <TouchableOpacity
+      style={s.sectionHeaderRow}
+      onPress={onToggleCollapse}
+      activeOpacity={onToggleCollapse ? 0.7 : 1}
+      disabled={!onToggleCollapse}
+      accessibilityRole="button"
+      accessibilityLabel={onToggleCollapse ? `${title}, ${collapsed ? 'collapsed, tap to expand' : 'expanded, tap to collapse'}` : title}
+      accessibilityState={onToggleCollapse ? { expanded: !collapsed } : undefined}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
         <Text style={s.sectionHeaderTitle}>{title}</Text>
-      )}
+        {onToggleCollapse && (
+          <Text style={{ fontSize: 12, color: Colors.textMuted }}>{collapsed ? '\u25B6' : '\u25BC'}</Text>
+        )}
+      </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         {iconAction && onIconAction && (
           <TouchableOpacity
-            onPress={onIconAction}
+            onPress={(e) => { e.stopPropagation(); onIconAction(); }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Quick log"
@@ -173,12 +173,16 @@ function SectionHeaderRow({
           </TouchableOpacity>
         )}
         {action && onAction && (
-          <TouchableOpacity onPress={onAction} accessibilityRole="button" accessibilityLabel={action}>
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); onAction(); }}
+            accessibilityRole="button"
+            accessibilityLabel={action}
+          >
             <Text style={s.sectionHeaderAction}>{action} →</Text>
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -263,7 +267,7 @@ export default function NowScreen() {
   const { dayState, carePlan, overrides, snoozeItem, setItemOverride, integrityWarnings, refresh: refreshCarePlan } = useCarePlan(today);
 
   // Appointments hook
-  const { todayAppointments, complete: completeAppointment } = useAppointments();
+  const { todayAppointments, nextAppointment, upcomingAppointments, complete: completeAppointment } = useAppointments();
 
   // Bucket-based Care Plan Config hook
   const { hasCarePlan: hasBucketCarePlan, loading: carePlanConfigLoading, enabledBuckets } = useCarePlanConfig();
@@ -313,7 +317,7 @@ export default function NowScreen() {
   const [vitalsGuidanceDismissed, setVitalsGuidanceDismissed] = useState(false);
 
   // Timeline collapse state — default expanded so users see their schedule
-  const [timelineCollapsed, setTimelineCollapsed] = useState(true);
+  const [timelineCollapsed, setTimelineCollapsed] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
   // Handoff / Patterns / Before Bed (mirrored from Journal)
@@ -460,14 +464,54 @@ export default function NowScreen() {
   }, [todayTimeline.overdue, vitalsExceedances, brief]);
 
 
+  // Hero totals — must match the buckets shown in ProgressRings
+  const { heroDone, heroTotal } = useMemo(() => {
+    const BUCKET_STAT_KEY: Record<string, keyof TodayStats> = {
+      meds: 'meds', vitals: 'vitals', meals: 'meals', water: 'water',
+      sleep: 'sleep', activity: 'activity', wellness: 'wellness', custom: 'custom',
+    };
+
+    // Only include buckets that have instance-based tracking
+    const instanceBuckets = new Set(
+      (instancesState?.instances ?? []).map(i => {
+        const typeMap: Record<string, string> = {
+          medication: 'meds', vitals: 'vitals', nutrition: 'meals',
+          activity: 'activity', wellness: 'wellness', custom: 'custom',
+          sleep: 'sleep',
+        };
+        return typeMap[i.itemType] ?? '';
+      }).filter(Boolean)
+    );
+
+    const buckets = enabledBuckets.length > 0 ? enabledBuckets : ['meds', 'vitals', 'meals', 'activity'];
+    let done = 0;
+    let total = 0;
+
+    for (const bucket of buckets) {
+      if (!instanceBuckets.has(bucket)) continue;
+      const key = BUCKET_STAT_KEY[bucket];
+      if (key) {
+        const stat = todayStats[key];
+        if (stat && stat.total > 0) {
+          done += stat.completed ?? 0;
+          total += stat.total ?? 0;
+        }
+      }
+    }
+
+    // Include custom if it has data and isn't already in enabledBuckets
+    if (todayStats.custom && todayStats.custom.total > 0 && !buckets.includes('custom')) {
+      done += todayStats.custom.completed ?? 0;
+      total += todayStats.custom.total ?? 0;
+    }
+
+    return { heroDone: done, heroTotal: total };
+  }, [todayStats, enabledBuckets, instancesState?.instances]);
+
   // Completion percentage for hero card
   const completionPct = useMemo(() => {
-    const done = (todayStats.meds?.completed ?? 0) + (todayStats.vitals?.completed ?? 0) +
-                 (todayStats.meals?.completed ?? 0) + (todayStats.activity?.completed ?? 0);
-    const total = (todayStats.meds?.total ?? 0) + (todayStats.vitals?.total ?? 0) +
-                  (todayStats.meals?.total ?? 0) + (todayStats.activity?.total ?? 0);
-    return total > 0 ? Math.round((done / total) * 100) : 0;
-  }, [todayStats]);
+    return heroTotal > 0 ? Math.round((heroDone / heroTotal) * 100) : 0;
+  }, [heroDone, heroTotal]);
 
   // Merge overdue + upcoming into single allPending array for TimelineSection
   const allPending = useMemo(() => {
@@ -489,7 +533,7 @@ export default function NowScreen() {
         const completed = items.filter(i => i.status === 'completed' || i.status === 'skipped').length;
         const pending = items.filter(i => i.status === 'pending').length;
         const total = items.length;
-        const allDone = completed === total;
+        const allDone = pending === 0 && total > 0;
         const isCurrent = w === currentWindow;
         return {
           window: w,
@@ -508,7 +552,21 @@ export default function NowScreen() {
   const hasLateMedication = todayTimeline.overdue.some(
     (i: any) => i.itemType === 'medication'
   );
-  const coffeeMoment = useCoffeeMoment(overdueCount, hasLateMedication);
+  const coffeeMoment = useCoffeeMoment(overdueCount, hasLateMedication, {
+    medsTotal: todayStats.meds?.total ?? 0,
+    medsDone: todayStats.meds?.completed ?? 0,
+    hasVitals: brief?.vitals?.recorded ?? false,
+    vitalsImproving: false,
+    patientSleepQuality: brief?.sleep?.quality != null
+      ? (brief.sleep.quality >= 4 ? 'good' : brief.sleep.quality >= 2 ? 'fair' : 'rough')
+      : 'fair',
+    upcomingAppointment: brief?.nextAppointment
+      ? {
+          days: Math.max(0, Math.ceil((new Date(brief.nextAppointment.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))),
+          doctor: brief.nextAppointment.provider || 'Doctor',
+        }
+      : null,
+  });
 
   // Handler for timeline item tap
   const handleTimelineItemPress = useCallback((instance: any) => {
@@ -577,6 +635,41 @@ export default function NowScreen() {
     }
     emitDataUpdate(EVENT.DAILY_INSTANCES);
   }, [completeInstance]);
+
+  // Next appointment for greeting subtitle
+  const nextApptDisplay = useMemo(() => {
+    const appt = nextAppointment;
+    if (!appt) return null;
+
+    const apptDate = new Date(appt.date);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    apptDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((apptDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0 || diffDays > 14) return null;
+
+    const dayLabel = diffDays === 0 ? 'Today'
+      : diffDays === 1 ? 'Tomorrow'
+      : apptDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    const timeLabel = appt.time
+      ? (() => {
+          const [h, m] = appt.time.split(':');
+          const hr = parseInt(h, 10);
+          const minStr = m === '00' ? '' : `:${m}`;
+          return `${hr % 12 || 12}${minStr} ${hr >= 12 ? 'PM' : 'AM'}`;
+        })()
+      : '';
+
+    const provider = appt.provider || appt.specialty || 'Appointment';
+
+    return {
+      text: `${provider} — ${dayLabel}${timeLabel ? ' at ' + timeLabel : ''}`,
+      daysUntil: diffDays,
+      id: appt.id,
+    };
+  }, [nextAppointment]);
 
   // ============================================================================
   // DATA LOADING
@@ -834,13 +927,35 @@ export default function NowScreen() {
         {/* Header: personalized greeting + patient chip */}
         <View style={styles.greetingHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.greetingDate}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-            </Text>
+            <TouchableOpacity
+              onPress={() => navigate('/calendar')}
+              activeOpacity={0.7}
+              style={styles.greetingDateRow}
+              accessibilityLabel="Open calendar"
+              accessibilityRole="button"
+            >
+              <Text style={styles.greetingDate}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </Text>
+              <Text style={styles.greetingDateChevron}>{'\u203A'}</Text>
+            </TouchableOpacity>
             <Text style={styles.greetingText}>
               {getGreeting()},{'\n'}
               <Text style={styles.greetingName}>{patientName !== 'Patient' ? patientName : 'there'}.</Text>
             </Text>
+            {nextApptDisplay && (
+              <TouchableOpacity
+                onPress={() => navigate('/provider-prep')}
+                activeOpacity={0.7}
+                style={styles.apptSubtitle}
+                accessibilityLabel={`Upcoming: ${nextApptDisplay.text}. Tap to prepare.`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.apptSubtitleIcon}>{'\uD83D\uDCC5'}</Text>
+                <Text style={styles.apptSubtitleText} numberOfLines={1}>{nextApptDisplay.text}</Text>
+                <Text style={styles.apptSubtitleChevron}>{'\u203A'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <TouchableOpacity
             onPress={() => setShowPatientSwitcher(true)}
@@ -916,6 +1031,7 @@ export default function NowScreen() {
             onClose={coffeeMoment.closeModal}
             microcopy="Pause for a minute"
             duration={60}
+            encouragement={coffeeMoment.encouragement}
           />
         )}
 
@@ -963,12 +1079,10 @@ export default function NowScreen() {
             {/* Big completion number */}
             <View style={styles.heroCompletionRow}>
               <Text style={styles.heroCompletionNumber}>
-                {(todayStats.meds?.completed ?? 0) + (todayStats.vitals?.completed ?? 0) +
-                 (todayStats.meals?.completed ?? 0) + (todayStats.activity?.completed ?? 0)}
+                {heroDone}
               </Text>
               <Text style={styles.heroCompletionDenom}>
-                /{(todayStats.meds?.total ?? 0) + (todayStats.vitals?.total ?? 0) +
-                   (todayStats.meals?.total ?? 0) + (todayStats.activity?.total ?? 0)} items
+                /{heroTotal} items
               </Text>
               <View style={styles.heroCompletionPill}>
                 <Text style={styles.heroCompletionPct}>{completionPct}%</Text>
@@ -1001,6 +1115,31 @@ export default function NowScreen() {
             /* Collapsed: window summary rows */
             windowSummary.length > 0 && (
               <View style={styles.sectionCard}>
+                {todayAppointments.length > 0 && todayAppointments.map((appt) => (
+                  <TouchableOpacity
+                    key={appt.id}
+                    style={styles.scheduleApptRow}
+                    onPress={() => navigate('/provider-prep')}
+                    activeOpacity={0.7}
+                    accessibilityLabel={`${appt.specialty} appointment with ${appt.provider} at ${appt.time}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.scheduleApptIcon}>{'\uD83D\uDCC5'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.scheduleApptTitle}>
+                        {appt.provider} — {appt.specialty}
+                      </Text>
+                      <Text style={styles.scheduleApptTime}>
+                        {appt.time ? (() => {
+                          const [h, m] = appt.time.split(':');
+                          const hr = parseInt(h, 10);
+                          return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+                        })() : 'Time TBD'}
+                      </Text>
+                    </View>
+                    <Text style={styles.scheduleApptAction}>Prep {'\u203A'}</Text>
+                  </TouchableOpacity>
+                ))}
                 {windowSummary.map((w) => (
                   <View
                     key={w.window}
@@ -1361,8 +1500,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 22,
-    paddingBottom: 12,
+    paddingTop: 14,
+    paddingBottom: 10,
+    minHeight: 44,
   },
   sectionHeaderTitle: {
     fontSize: 9,
@@ -1414,7 +1554,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   heroCard: {
     borderRadius: 22,
     padding: 20,
-    marginBottom: 14,
+    marginBottom: 8,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: c.accentBorder,
@@ -1605,5 +1745,68 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   beforeBedArrow: {
     fontSize: 14,
     color: c.accent,
+  },
+
+  // ── Greeting date row (tappable) ──
+  greetingDateRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  greetingDateChevron: {
+    fontSize: 10,
+    color: c.textDisabled,
+  },
+
+  // ── Appointment subtitle ──
+  apptSubtitle: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginTop: 6,
+  },
+  apptSubtitleIcon: {
+    fontSize: 12,
+  },
+  apptSubtitleText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: c.purple,
+  },
+  apptSubtitleChevron: {
+    fontSize: 10,
+    color: c.textDisabled,
+  },
+
+  // ── Schedule appointment row ──
+  scheduleApptRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 4,
+    backgroundColor: c.purpleFaint,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.purpleBorder,
+  },
+  scheduleApptIcon: {
+    fontSize: 14,
+  },
+  scheduleApptTitle: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: c.textPrimary,
+  },
+  scheduleApptTime: {
+    fontSize: 11,
+    color: c.textMuted,
+    marginTop: 1,
+  },
+  scheduleApptAction: {
+    fontSize: 11,
+    color: c.accent,
+    fontWeight: '500' as const,
   },
 });

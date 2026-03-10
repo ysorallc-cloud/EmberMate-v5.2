@@ -22,10 +22,10 @@ describe('Progress Rings (restored)', () => {
     expect(todayContent).toContain("action=\"Care Plan\"");
   });
 
-  test('timeline defaults to collapsed', () => {
+  test('timeline defaults to expanded', () => {
     const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
     const todayContent = fs.readFileSync(todayPath, 'utf-8');
-    expect(todayContent).toContain('const [timelineCollapsed, setTimelineCollapsed] = useState(true)');
+    expect(todayContent).toContain('const [timelineCollapsed, setTimelineCollapsed] = useState(false)');
   });
 
   test('preserves tap-to-filter interface', () => {

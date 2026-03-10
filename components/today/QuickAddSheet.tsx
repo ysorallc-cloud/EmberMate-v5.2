@@ -24,6 +24,7 @@ import { emitDataUpdate } from '../../lib/events';
 import { EVENT } from '../../lib/eventNames';
 import { logError } from '../../utils/devLog';
 import { emitSymptomEvent, emitNoteEvent, emitBathroomEvent } from '../../utils/eventEmitter';
+import { navigate } from '../../lib/navigate';
 
 type QuickAddType = 'symptom' | 'note' | 'bathroom' | null;
 
@@ -148,6 +149,18 @@ export function QuickAddSheet({ visible, onClose }: Props) {
                   >
                     <Text style={styles.optionIcon}>{'\uD83D\uDEBD'}</Text>
                     <Text style={styles.optionLabel}>Bathroom</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.optionCard}
+                    onPress={() => {
+                      onClose();
+                      navigate('/appointment-form');
+                    }}
+                    accessibilityLabel="Add appointment"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.optionIcon}>{'\uD83D\uDCC5'}</Text>
+                    <Text style={styles.optionLabel}>Appointment</Text>
                   </TouchableOpacity>
                 </View>
               </>

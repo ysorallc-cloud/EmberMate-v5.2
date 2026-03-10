@@ -31,10 +31,10 @@ describe('Quick Add Sheet (Chunk 11)', () => {
     expect(content).not.toMatch(/title=["']Now["']/);
   });
 
-  test('Today screen does not contain Visit Prep / provider-prep', () => {
+  test('Today screen does not contain legacy Visit Prep patterns', () => {
     const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
     const content = fs.readFileSync(todayPath, 'utf-8');
-    expect(content).not.toContain('provider-prep');
+    // provider-prep is now used for appointment subtitle and schedule row links
     expect(content).not.toContain('upcomingPrepAppointment');
     expect(content).not.toContain('UPCOMING THIS WEEK');
   });

@@ -321,11 +321,12 @@ export default function SettingsScreen() {
   };
 
   // Define all settings organized into categories
+  // 4 sections: Care & Medical, Appearance, Security & Data, About & Support
   const categories: SettingsCategory[] = useMemo(() => [
     {
       id: 'profile',
       icon: '👤',
-      title: 'Profile & Medical Info',
+      title: 'Care & Medical',
       items: [
         {
           id: 'care-plan',
@@ -339,7 +340,7 @@ export default function SettingsScreen() {
           id: 'patient',
           icon: '👤',
           title: 'Patient Information',
-          subtitle: `${patientName || 'Patient'} • Medical history & allergies`,
+          subtitle: `${patientName || 'Patient'} \u2022 Medical history & allergies`,
           color: 'rgba(52, 211, 153, 0.14)',
           onPress: () => router.push('/patient'),
         },
@@ -375,32 +376,52 @@ export default function SettingsScreen() {
           color: 'rgba(251, 191, 36, 0.14)',
           onPress: () => navigate('/vital-threshold-settings'),
         },
+        {
+          id: 'export-summary',
+          icon: '📤',
+          title: 'Export Summary',
+          subtitle: 'Create care summary PDF',
+          color: 'rgba(255, 255, 255, 0.07)',
+          onPress: () => router.push('/care-report?scope=full'),
+        },
+        {
+          id: 'notification-settings',
+          icon: '🔔',
+          title: 'Notification Settings',
+          subtitle: 'Sound, quiet hours, escalation',
+          color: 'rgba(251, 191, 36, 0.14)',
+          onPress: () => router.push('/notification-settings'),
+        },
+        {
+          id: 'care-team',
+          icon: '👥',
+          title: 'Care Team',
+          subtitle: caregiverCount > 0
+            ? `${caregiverCount} connected \u00B7 Manage caregivers, sharing & activity`
+            : 'Manage caregivers, family sharing & activity',
+          color: 'rgba(96, 165, 250, 0.14)',
+          onPress: async () => {
+            const result = await checkFeatureAccess('care_team');
+            if (result.allowed) {
+              router.push('/caregiver-management');
+            } else {
+              router.push('/upgrade');
+            }
+          },
+        },
       ],
     },
     {
       id: 'appearance',
       icon: '🎨',
-      title: 'Appearance & Experience',
+      title: 'Appearance',
       items: [
-        {
-          id: 'theme',
-          icon: '🌙',
-          title: 'Theme',
-          subtitle: 'Dark',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => {
-            // Light mode disabled — StyleSheet.create() at module scope captures
-            // dark theme Colors at import time. 70+ screens show white text on
-            // light background. Requires full migration to useTheme() hook.
-            // System mode also broken when phone is in light mode.
-            setThemeMode('dark');
-          },
-        },
+        // Theme item REMOVED — light mode broken (see comment at line 392 of original)
         {
           id: 'high-contrast',
           icon: '🔲',
           title: 'High Contrast',
-          subtitle: highContrast ? 'On — increased text and border contrast' : 'Off',
+          subtitle: highContrast ? 'On \u2014 increased text and border contrast' : 'Off',
           color: 'rgba(255, 255, 255, 0.07)',
           onPress: () => setHighContrast(!highContrast),
         },
@@ -415,108 +436,25 @@ export default function SettingsScreen() {
       ],
     },
     {
-      id: 'notifications',
-      icon: '🔔',
-      title: 'Notifications & Reminders',
-      items: [
-        {
-          id: 'notification-settings',
-          icon: '🔔',
-          title: 'Notification Settings',
-          subtitle: 'Sound, quiet hours, escalation',
-          color: 'rgba(251, 191, 36, 0.14)',
-          onPress: () => router.push('/notification-settings'),
-        },
-      ],
-    },
-    {
-      id: 'careTeam',
-      icon: '👥',
-      title: 'Care Team',
-      items: [
-        {
-          id: 'manage-caregivers',
-          icon: '👤',
-          title: 'Manage Caregivers',
-          subtitle: `${caregiverCount} connected`,
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: async () => {
-            const result = await checkFeatureAccess('care_team');
-            if (result.allowed) {
-              router.push('/caregiver-management');
-            } else {
-              router.push('/upgrade');
-            }
-          },
-        },
-        {
-          id: 'family-sharing',
-          icon: '🔗',
-          title: 'Family Sharing',
-          subtitle: 'Invite & manage access',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: async () => {
-            const result = await checkFeatureAccess('care_team');
-            if (result.allowed) {
-              router.push('/family-sharing');
-            } else {
-              router.push('/upgrade');
-            }
-          },
-        },
-        {
-          id: 'care-team-activity',
-          icon: '📋',
-          title: 'Care Team Activity',
-          subtitle: 'Recent caregiver actions',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: async () => {
-            const result = await checkFeatureAccess('activity_feed');
-            if (result.allowed) {
-              router.push('/family-activity');
-            } else {
-              router.push('/upgrade');
-            }
-          },
-        },
-      ],
-    },
-    {
       id: 'privacy',
       icon: '🔒',
-      title: 'Privacy & Data',
+      title: 'Security & Data',
       items: [
         {
-          id: 'security',
+          id: 'security-privacy',
           icon: '🔒',
-          title: 'Security Settings',
-          subtitle: 'App lock, encryption, audit logs',
+          title: 'Security & Privacy',
+          subtitle: 'App lock, data retention, sharing controls',
           color: 'rgba(255, 255, 255, 0.07)',
           onPress: () => router.push('/settings/security'),
-        },
-        {
-          id: 'data-privacy',
-          icon: '🛡️',
-          title: 'Data & Privacy',
-          subtitle: 'Sample data, retention, sharing controls',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => navigate('/data-privacy-settings'),
         },
         {
           id: 'backup',
           icon: '💾',
           title: 'Backup & Restore',
-          subtitle: 'Back up before switching devices — data is local only',
+          subtitle: 'Back up before switching devices \u2014 data is local only',
           color: 'rgba(255, 255, 255, 0.07)',
           onPress: () => router.push('/settings/backup'),
-        },
-        {
-          id: 'export-summary',
-          icon: '📤',
-          title: 'Export Summary',
-          subtitle: 'Create care summary PDF',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => router.push('/care-report?scope=full'),
         },
         {
           id: 'delete-my-data',
@@ -559,20 +497,19 @@ export default function SettingsScreen() {
           onPress: () => Linking.openURL('https://ysorallc.org/terms'),
         },
         {
-          id: 'reset-onboarding',
-          icon: '🔄',
-          title: 'Reset Onboarding',
-          subtitle: 'View welcome screens again',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: handleResetOnboarding,
-        },
-        {
           id: 'version',
           icon: 'ℹ️',
           title: 'Version',
           subtitle: Constants.expoConfig?.version ?? '5.8.0',
           color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => Alert.alert('EmberMate', `Version ${Constants.expoConfig?.version ?? '5.8.0'}\n\nBuilt with care for caregivers.`, [{ text: 'OK' }]),
+          onPress: () => Alert.alert(
+            'EmberMate',
+            `Version ${Constants.expoConfig?.version ?? '5.8.0'}\n\nBuilt with care for caregivers.`,
+            [
+              { text: 'OK' },
+              { text: 'Reset Onboarding', style: 'destructive', onPress: handleResetOnboarding },
+            ]
+          ),
         },
       ],
     },
