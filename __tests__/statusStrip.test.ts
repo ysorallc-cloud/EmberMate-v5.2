@@ -15,17 +15,11 @@ describe('Progress Rings (restored)', () => {
     expect(content).toContain('Circle');
   });
 
-  test('today screen has Progress section header with Care Plan link', () => {
+  test('today screen uses DadOrb with ProgressRings available', () => {
     const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
     const todayContent = fs.readFileSync(todayPath, 'utf-8');
-    expect(todayContent).toContain("title=\"Today's Progress\"");
-    expect(todayContent).toContain("action=\"Care Plan\"");
-  });
-
-  test('timeline defaults to expanded', () => {
-    const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
-    const todayContent = fs.readFileSync(todayPath, 'utf-8');
-    expect(todayContent).toContain('const [timelineCollapsed, setTimelineCollapsed] = useState(false)');
+    expect(todayContent).toContain('DadOrb');
+    expect(todayContent).toContain('ProgressRings');
   });
 
   test('preserves tap-to-filter interface', () => {

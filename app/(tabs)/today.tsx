@@ -84,6 +84,10 @@ import { MorningMedsBanner } from '../../components/now/MorningMedsBanner';
 import { TimelineSection } from '../../components/now/TimelineSection';
 import { RoutineSheet } from '../../components/now/RoutineSheet';
 import { HandoffPromptCard } from '../../components/now/HandoffPromptCard';
+import { DadOrb } from '../../components/now/DadOrb';
+import { NextActionCard } from '../../components/now/NextActionCard';
+import { CaregiverZone } from '../../components/now/CaregiverZone';
+
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good Morning';
@@ -668,6 +672,92 @@ export default function NowScreen() {
     };
   }, [nextAppointment]);
 
+  // DadOrb computed values — non-med care totals
+  const { careDone, careTotal } = useMemo(() => {
+    let done = 0;
+    let total = 0;
+    const nonMedKeys: (keyof TodayStats)[] = ['vitals', 'meals', 'wellness', 'activity'];
+    for (const key of nonMedKeys) {
+      const stat = todayStats[key];
+      if (stat && stat.total > 0) {
+        done += stat.completed ?? 0;
+        total += stat.total ?? 0;
+      }
+    }
+    if (todayStats.custom && todayStats.custom.total > 0) {
+      done += todayStats.custom.completed ?? 0;
+      total += todayStats.custom.total ?? 0;
+    }
+    return { careDone: done, careTotal: total };
+  }, [todayStats]);
+
+  // Last completed item for DadOrb
+  const lastCompleted = useMemo(() => {
+    const completed = todayTimeline.completed;
+    if (completed.length === 0) return null;
+    const last = completed[completed.length - 1];
+    return {
+      label: last.itemName || last.itemType,
+      time: formatTime(last.scheduledTime),
+    };
+  }, [todayTimeline.completed]);
+
+  // DadOrb legend items
+  const orbLegend = useMemo(() => [
+    { color: colors.accent, label: `Meds ${todayStats.meds.completed}/${todayStats.meds.total}` },
+    { color: '#67B8A7', label: `Vitals ${todayStats.vitals.completed}/${todayStats.vitals.total}` },
+    { color: colors.amber, label: `Meals ${todayStats.meals.completed}/${todayStats.meals.total}` },
+    { color: '#EC4899', label: `Check ${todayStats.wellness?.completed ?? 0}/${todayStats.wellness?.total ?? 0}` },
+  ].filter(item => !item.label.endsWith('/0')), [todayStats, colors]);
+
+  // NextActionCard data
+  const nextTask = useMemo(() => {
+    const first = allPending[0];
+    if (!first) return null;
+    return {
+      id: first.id,
+      label: first.itemName || first.itemType,
+      sub: first.itemDosage || first.instructions || '',
+      emoji: first.itemEmoji || (first.itemType === 'medication' ? '\uD83D\uDC8A' : first.itemType === 'vitals' ? '\uD83D\uDCCA' : first.itemType === 'nutrition' ? '\uD83C\uDF7D\uFE0F' : '\u2705'),
+      isMed: first.itemType === 'medication',
+      overdue: isOverdue(first.scheduledTime),
+    };
+  }, [allPending]);
+
+  const currentTimeWindow = useMemo(() => getCurrentTimeWindow(), []);
+
+  const nextApptForCard = useMemo(() => {
+    if (!nextAppointment) return null;
+    const appt = nextAppointment;
+    const [year, month, day] = appt.date.split('-').map(Number);
+    const apptDate = new Date(year, month - 1, day);
+    const dayLabel = apptDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const timeLabel = appt.time
+      ? (() => {
+          const [h, m] = appt.time.split(':');
+          const hr = parseInt(h, 10);
+          return `${hr % 12 || 12}${m === '00' ? '' : ':' + m} ${hr >= 12 ? 'PM' : 'AM'}`;
+        })()
+      : '';
+    return {
+      provider: appt.provider || appt.specialty || 'Appointment',
+      date: dayLabel,
+      time: timeLabel,
+    };
+  }, [nextAppointment]);
+
+  // Handler for NextActionCard confirm
+  const handleNextConfirm = useCallback(async (taskId: string) => {
+    const task = allPending.find(t => t.id === taskId);
+    if (!task) return;
+    if (task.itemType === 'medication') {
+      const pendingMeds = allPending.filter(i => i.itemType === 'medication');
+      await handleBatchMedConfirm(pendingMeds.map(m => m.id));
+    } else {
+      handleTimelineItemPress(task);
+    }
+  }, [allPending, handleBatchMedConfirm, handleTimelineItemPress]);
+
   // ============================================================================
   // DATA LOADING
   // ============================================================================
@@ -937,22 +1027,8 @@ export default function NowScreen() {
               <Text style={styles.greetingDateChevron}>{'\u203A'}</Text>
             </TouchableOpacity>
             <Text style={styles.greetingText}>
-              {getGreeting()},{'\n'}
-              <Text style={styles.greetingName}>{patientName !== 'Patient' ? patientName : 'there'}.</Text>
+              {getGreeting()}
             </Text>
-            {nextApptDisplay && (
-              <TouchableOpacity
-                onPress={() => navigate('/provider-prep')}
-                activeOpacity={0.7}
-                style={styles.apptSubtitle}
-                accessibilityLabel={`Upcoming: ${nextApptDisplay.text}. Tap to prepare.`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.apptSubtitleIcon}>{'\uD83D\uDCC5'}</Text>
-                <Text style={styles.apptSubtitleText} numberOfLines={1}>{nextApptDisplay.text}</Text>
-                <Text style={styles.apptSubtitleChevron}>{'\u203A'}</Text>
-              </TouchableOpacity>
-            )}
           </View>
           <TouchableOpacity
             onPress={() => setShowPatientSwitcher(true)}
@@ -965,11 +1041,7 @@ export default function NowScreen() {
                 {patientName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <Text style={styles.patientChipName}>{patientName}</Text>
-            {isSampleMode && <Text style={styles.demoBadge}>DEMO</Text>}
-            {patients.length > 1 && (
-              <Text style={{ fontSize: 10, color: colors.textMuted }}>{'\u25BC'}</Text>
-            )}
+            <Text style={{ fontSize: 10, color: colors.textDisabled }}>{'\u25BE'}</Text>
           </TouchableOpacity>
         </View>
         {showPatientSwitcher && (
@@ -1042,67 +1114,31 @@ export default function NowScreen() {
 
         <View style={styles.content}>
 
-          {/* ═══ URGENT ACTION — MEDS BANNER ═══ */}
-          <MorningMedsBanner
-            pendingCount={allPending.filter((i: any) => i.itemType === 'medication').length}
-            pendingInstanceIds={allPending.filter((i: any) => i.itemType === 'medication').map((i: any) => i.id)}
-            onConfirmAll={handleBatchMedConfirm}
+          {/* ═══ DAD ORB ═══ */}
+          <DadOrb
+            patientName={patientName}
+            medsDone={todayStats.meds.completed}
+            medsTotal={todayStats.meds.total}
+            careDone={careDone}
+            careTotal={careTotal}
+            lastCompleted={lastCompleted}
+            legend={orbLegend}
           />
 
-          {/* ═══ CARE STATUS BANNER ═══ */}
-          <CareStatusBanner
-            status={careStatus}
-            styles={styles}
-            colors={colors}
-            insightMessage={insight ? insight.message : null}
+          {/* ═══ SIDE-BY-SIDE: Appointment + Next ═══ */}
+          <NextActionCard
+            nextTask={nextTask}
+            appointment={nextApptForCard}
+            currentTimeWindow={currentTimeWindow === 'morning' ? 'Morning' : currentTimeWindow === 'afternoon' ? 'Afternoon' : currentTimeWindow === 'evening' ? 'Evening' : 'Night'}
+            onConfirm={handleNextConfirm}
+            onPrepVisit={() => navigate('/provider-prep')}
           />
 
-          {/* ═══ ZONE 1: TODAY'S PROGRESS ═══ */}
-          <SectionHeaderRow
-            title="Today's Progress"
-            action="Care Plan"
-            onAction={() => navigate('/care-plan')}
-            styles={styles}
-          />
-          <LinearGradient
-            colors={[colors.heroGradStart, colors.heroGradMid, colors.heroGradEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
-            accessibilityLiveRegion="polite"
-            accessibilityRole="summary"
-          >
-            <View style={styles.heroOrb} pointerEvents="none" />
-            {/* Big completion number */}
-            <View style={styles.heroCompletionRow}>
-              <Text style={styles.heroCompletionNumber}>
-                {heroDone}
-              </Text>
-              <Text style={styles.heroCompletionDenom}>
-                /{heroTotal} items
-              </Text>
-              <View style={styles.heroCompletionPill}>
-                <Text style={styles.heroCompletionPct}>{completionPct}%</Text>
-              </View>
-            </View>
-            <ProgressRings
-              todayStats={todayStats}
-              enabledBuckets={enabledBuckets}
-              nextUp={todayTimeline?.nextUp}
-              instances={instancesState?.instances || []}
-              selectedCategory={selectedCategory}
-              onRingPress={handleRingPress}
-              onManagePress={() => navigate('/care-plan')}
-              patientName={patientName}
-            />
-          </LinearGradient>
-
-
-          {/* ═══ ZONE 2: TODAY'S SCHEDULE ═══ */}
+          {/* ═══ TODAY'S SCHEDULE ═══ */}
           <SectionHeaderRow
             title="Today's Schedule"
-            iconAction="+"
-            onIconAction={() => setShowQuickAdd(true)}
+            action="Care Plan"
+            onAction={() => navigate('/care-plan')}
             collapsed={timelineCollapsed}
             onToggleCollapse={() => setTimelineCollapsed(prev => !prev)}
             styles={styles}
@@ -1213,7 +1249,7 @@ export default function NowScreen() {
             </View>
           )}
 
-          {/* ═══ ZONE 3: WHAT'S HAPPENED ═══ */}
+          {/* ═══ WHAT'S HAPPENED ═══ */}
           {brief && (() => {
             const handoffNotes = buildHandoffNotes();
             if (handoffNotes.length === 0) return null;
@@ -1251,7 +1287,7 @@ export default function NowScreen() {
             );
           })()}
 
-          {/* ═══ ZONE 5: BEFORE BED ═══ */}
+          {/* ═══ BEFORE BED ═══ */}
           {brief && new Date().getHours() >= 17 && (() => {
             const bedItems = buildBeforeBedItems();
             if (bedItems.length === 0) return null;
@@ -1276,61 +1312,22 @@ export default function NowScreen() {
             );
           })()}
 
-          {/* ═══ HANDOFF PROMPT ═══ */}
-          <HandoffPromptCard completedCount={todayTimeline.completed.length} />
+          {/* ═══ ENCOURAGEMENT ═══ */}
+          <Text style={styles.encouragementText}>
+            {allPending.length === 0 && todayTimeline.completed.length > 0
+              ? 'You showed up today, and that matters.'
+              : allPending.length <= 2 && allPending.length > 0
+              ? 'Almost there. You\'re doing more than you think.'
+              : 'Caregiving is hard. You\'re not behind \u2014 you\'re showing up.'}
+          </Text>
 
-          {/* ═══ FOOTER ═══ */}
-          {/* All-done / encouragement */}
-          {hasRegimenInstances &&
-            allPending.length === 0 &&
-            todayTimeline.completed.length > 0 && (() => {
-              const hasMissed = todayTimeline.completed.some(i => i.status === 'missed');
-              if (hasMissed) {
-                return (
-                  <Text
-                    style={styles.encouragementText}
-                    accessible={true}
-                    accessibilityRole="text"
-                  >
-                    You're doing a great job. Every bit of care matters.
-                  </Text>
-                );
-              }
-              return (
-                <View
-                  style={styles.allDoneMessage}
-                  accessible={true}
-                  accessibilityRole="text"
-                  accessibilityLabel="All caught up! All care plan items are complete for today."
-                  accessibilityLiveRegion="polite"
-                >
-                  <Text style={styles.allDoneEmoji}>🎉</Text>
-                  <Text style={styles.allDoneText}>All caught up!</Text>
-                </View>
-              );
-            })()}
-
-          {/* Footer message + coffee link */}
-          <View style={styles.footerSection}>
-            <Text style={styles.footerMessage}>
-              {allPending.length === 0 && todayTimeline.completed.length > 0
-                ? 'You showed up today, and that matters.'
-                : allPending.length <= 2 && allPending.length > 0
-                ? 'Almost there. You\'re doing more than you think.'
-                : 'Caregiving is hard. You\'re not behind \u2014 you\'re showing up.'}
-            </Text>
-            <TouchableOpacity
-              onPress={coffeeMoment.startReset}
-              style={styles.footerCoffeeLink}
-              activeOpacity={0.7}
-              accessibilityLabel="Take a 1-minute breathing pause"
-              accessibilityRole="button"
-            >
-              <Text style={styles.footerCoffeeLinkText}>
-                {'\u2615'}  Take a 1-minute pause
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* ═══ FOR YOU ═══ */}
+          <CaregiverZone
+            completedCount={todayTimeline.completed.length}
+            skippedCount={suppressedItems.length}
+            onPause={coffeeMoment.startReset}
+            onQuickAdd={() => setShowQuickAdd(true)}
+          />
 
         </View>
 

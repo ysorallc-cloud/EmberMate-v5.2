@@ -7,9 +7,10 @@ interface CaregiverZoneProps {
   completedCount: number;
   skippedCount: number;
   onPause: () => void;
+  onQuickAdd?: () => void;
 }
 
-export function CaregiverZone({ completedCount, skippedCount, onPause }: CaregiverZoneProps) {
+export function CaregiverZone({ completedCount, skippedCount, onPause, onQuickAdd }: CaregiverZoneProps) {
   const { colors } = useTheme();
 
   return (
@@ -52,6 +53,25 @@ export function CaregiverZone({ completedCount, skippedCount, onPause }: Caregiv
           <Text style={[styles.cardAction, { color: colors.purple }]}>Log {'\u203A'}</Text>
         </TouchableOpacity>
 
+        {/* Quick Add */}
+        {onQuickAdd && (
+          <TouchableOpacity
+            style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
+            onPress={onQuickAdd}
+            activeOpacity={0.7}
+            accessibilityLabel="Quick add a log entry"
+            accessibilityRole="button"
+          >
+            <View style={[styles.iconBox, { backgroundColor: colors.accentLight, borderColor: colors.accentBorder }]}>
+              <Text style={[styles.iconEmoji, { fontSize: 18, fontWeight: '300' as const, color: colors.accent }]}>+</Text>
+            </View>
+            <View>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Quick Add</Text>
+              <Text style={[styles.cardSub, { color: colors.textMuted }]}>Log event</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Coffee Moment / Pause */}
         <TouchableOpacity
           style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
@@ -67,7 +87,6 @@ export function CaregiverZone({ completedCount, skippedCount, onPause }: Caregiv
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Pause</Text>
             <Text style={[styles.cardSub, { color: colors.textMuted }]}>1-min reset</Text>
           </View>
-          <Text style={[styles.cardAction, { color: colors.amber }]}>Start {'\u203A'}</Text>
         </TouchableOpacity>
       </View>
     </View>

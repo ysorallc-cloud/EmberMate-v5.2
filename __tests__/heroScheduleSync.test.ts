@@ -123,9 +123,9 @@ describe('Hero card matches enabled ring buckets', () => {
     const todayPath = path.resolve(__dirname, '../app/(tabs)/today.tsx');
     const content = fs.readFileSync(todayPath, 'utf-8');
 
-    // Hero render should use computed heroDone/heroTotal
-    expect(content).toContain('{heroDone}');
-    expect(content).toContain('{heroTotal}');
+    // heroDone/heroTotal should be computed (used for internal state)
+    expect(content).toContain('heroDone');
+    expect(content).toContain('heroTotal');
 
     // completionPct should derive from heroDone/heroTotal
     expect(content).toMatch(/completionPct.*heroDone.*heroTotal|heroDone.*\/.*heroTotal.*completionPct/s);

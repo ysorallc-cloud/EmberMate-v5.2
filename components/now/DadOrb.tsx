@@ -3,6 +3,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 
+interface LegendItem {
+  color: string;
+  label: string;
+}
+
 interface DadOrbProps {
   patientName: string;
   medsDone: number;
@@ -10,9 +15,10 @@ interface DadOrbProps {
   careDone: number;
   careTotal: number;
   lastCompleted?: { label: string; time: string } | null;
+  legend?: LegendItem[];
 }
 
-export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, lastCompleted }: DadOrbProps) {
+export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, lastCompleted, legend }: DadOrbProps) {
   const { colors } = useTheme();
   const overallDone = medsDone + careDone;
   const overallTotal = medsTotal + careTotal;
@@ -73,11 +79,16 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
       {/* Status */}
       <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
 
-      {/* Last completed */}
-      {lastCompleted && (
-        <Text style={[styles.lastText, { color: colors.textMuted }]}>
-          Last: {lastCompleted.label} at {lastCompleted.time}
-        </Text>
+      {/* Legend */}
+      {legend && legend.length > 0 && (
+        <View style={styles.legend}>
+          {legend.map((item) => (
+            <View key={item.label} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+              <Text style={[styles.legendLabel, { color: colors.textMuted }]}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
       )}
     </View>
   );
@@ -119,8 +130,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-  lastText: {
-    marginTop: 5,
-    fontSize: 11,
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 14,
+    marginTop: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  legendDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  legendLabel: {
+    fontSize: 10,
   },
 });

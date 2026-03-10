@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row' as const,
     gap: 10,
-    paddingHorizontal: 20,
     paddingTop: 14,
   },
   rowDouble: {},
