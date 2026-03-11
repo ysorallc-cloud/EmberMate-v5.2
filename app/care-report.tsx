@@ -49,7 +49,6 @@ import { buildProviderPrep, ProviderPrepData } from '../utils/providerPrepBuilde
 import { logError } from '../utils/devLog';
 import { navigate } from '../lib/navigate';
 import { logAuditEvent, AuditEventType, AuditSeverity } from '../utils/auditLog';
-import { checkFeatureAccess } from '../utils/featureGate';
 
 // ============================================================================
 // TYPES
@@ -189,12 +188,6 @@ export default function CareReportScreen() {
 
   const doExport = useCallback(async () => {
     try {
-      const gate = await checkFeatureAccess('pdf_export');
-      if (!gate.allowed) {
-        router.push('/upgrade');
-        return;
-      }
-
       setExporting(true);
       await logAuditEvent(
         AuditEventType.CARE_BRIEF_EXPORTED,

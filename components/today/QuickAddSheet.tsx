@@ -128,40 +128,64 @@ export function QuickAddSheet({ visible, onClose }: Props) {
               /* ── TYPE SELECTOR ── */
               <>
                 <Text style={styles.sheetTitle}>Quick Add</Text>
-                <View style={styles.optionRow}>
-                  <TouchableOpacity
-                    style={styles.optionCard}
-                    onPress={() => setActiveType('symptom')}
-                  >
-                    <Text style={styles.optionIcon}>{'\uD83E\uDD12'}</Text>
-                    <Text style={styles.optionLabel}>Symptom</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.optionCard}
-                    onPress={() => setActiveType('note')}
-                  >
-                    <Text style={styles.optionIcon}>{'\uD83D\uDCDD'}</Text>
-                    <Text style={styles.optionLabel}>Note</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.optionCard}
-                    onPress={() => setActiveType('bathroom')}
-                  >
-                    <Text style={styles.optionIcon}>{'\uD83D\uDEBD'}</Text>
-                    <Text style={styles.optionLabel}>Bathroom</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.optionCard}
-                    onPress={() => {
-                      onClose();
-                      navigate('/appointment-form');
-                    }}
-                    accessibilityLabel="Add appointment"
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.optionIcon}>{'\uD83D\uDCC5'}</Text>
-                    <Text style={styles.optionLabel}>Appointment</Text>
-                  </TouchableOpacity>
+                <View style={styles.optionGrid}>
+                  <View style={styles.optionRow}>
+                    <TouchableOpacity
+                      style={styles.optionCard}
+                      onPress={() => setActiveType('note')}
+                    >
+                      <Text style={styles.optionIcon}>{'\uD83D\uDCDD'}</Text>
+                      <Text style={styles.optionLabel}>Jot a note</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.optionCard}
+                      onPress={() => setActiveType('symptom')}
+                    >
+                      <Text style={styles.optionIcon}>{'\uD83D\uDE1F'}</Text>
+                      <Text style={styles.optionLabel}>Something{'\n'}seems off</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.optionCard}
+                      onPress={() => {
+                        onClose();
+                        navigate('/log-pain');
+                      }}
+                    >
+                      <Text style={styles.optionIcon}>{'\uD83E\uDE79'}</Text>
+                      <Text style={styles.optionLabel}>Pain or{'\n'}discomfort</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.optionRow}>
+                    <TouchableOpacity
+                      style={styles.optionCard}
+                      onPress={() => setActiveType('bathroom')}
+                    >
+                      <Text style={styles.optionIcon}>{'\uD83D\uDEBD'}</Text>
+                      <Text style={styles.optionLabel}>Bathroom{'\n'}visit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.optionCard}
+                      onPress={() => {
+                        onClose();
+                        navigate('/log-water');
+                      }}
+                    >
+                      <Text style={styles.optionIcon}>{'\uD83D\uDCA7'}</Text>
+                      <Text style={styles.optionLabel}>Water /{'\n'}fluids</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.optionCard}
+                      onPress={() => {
+                        onClose();
+                        navigate('/appointment-form');
+                      }}
+                      accessibilityLabel="Add appointment"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.optionIcon}>{'\uD83D\uDCC5'}</Text>
+                      <Text style={styles.optionLabel}>Appointment</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </>
             ) : activeType === 'symptom' ? (
@@ -295,10 +319,13 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: c.textPrimary,
     marginBottom: Spacing.md,
   },
+  optionGrid: {
+    gap: 12,
+    marginTop: Spacing.sm,
+  },
   optionRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: Spacing.sm,
   },
   optionCard: {
     flex: 1,
@@ -361,7 +388,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   chipSelected: {
     borderColor: c.accent,
-    backgroundColor: 'rgba(0, 200, 150, 0.15)',
+    backgroundColor: c.accentLight,
   },
   chipText: {
     color: c.textPrimary,

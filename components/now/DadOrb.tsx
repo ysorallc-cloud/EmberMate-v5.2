@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated as RNAnimated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -22,8 +22,9 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
   const { colors } = useTheme();
   const overallDone = medsDone + careDone;
   const overallTotal = medsTotal + careTotal;
+  const allDone = overallDone >= overallTotal && overallTotal > 0;
 
-  const statusText = overallDone >= overallTotal && overallTotal > 0
+  const statusText = allDone
     ? 'All taken care of'
     : overallDone >= overallTotal * 0.7
     ? 'On track today'
@@ -31,7 +32,25 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
     ? 'Making progress'
     : 'Getting started';
 
-  const statusColor = overallDone >= overallTotal && overallTotal > 0 ? colors.accentGradientEnd : colors.textPrimary;
+  const statusColor = allDone ? colors.accentGradientEnd : colors.textPrimary;
+
+  // Subtle pulse animation when all done
+  const pulseAnim = useRef(new RNAnimated.Value(1)).current;
+
+  useEffect(() => {
+    if (allDone) {
+      const pulse = RNAnimated.loop(
+        RNAnimated.sequence([
+          RNAnimated.timing(pulseAnim, { toValue: 1.06, duration: 2000, useNativeDriver: true }),
+          RNAnimated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [allDone, pulseAnim]);
 
   const outerRadius = 62;
   const innerRadius = 50;
@@ -43,7 +62,7 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
 
   return (
     <View style={styles.container}>
-      <View style={styles.orbWrapper}>
+      <RNAnimated.View style={[styles.orbWrapper, { transform: [{ scale: pulseAnim }] }]}>
         <Svg width={140} height={140} viewBox="0 0 140 140" style={styles.svg}>
           {/* Track rings */}
           <Circle cx={70} cy={70} r={outerRadius} fill="none" stroke="rgba(91,138,106,0.08)" strokeWidth={strokeWidth} />
@@ -70,15 +89,25 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
           )}
         </Svg>
         {/* Avatar center */}
-        <View style={[styles.avatar, {
-          backgroundColor: colors.heroGradMid,
-          borderColor: colors.accentBorder,
-        }]}>
-          <Text style={[styles.avatarText, { color: colors.amber }]}>
+        <View style={[
+          styles.avatar,
+          {
+            backgroundColor: colors.heroGradMid,
+            borderColor: allDone ? colors.accent : colors.accentBorder,
+          },
+          allDone && {
+            shadowColor: colors.accent,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.45,
+            shadowRadius: 12,
+            elevation: 8,
+          },
+        ]}>
+          <Text style={[styles.avatarText, { color: allDone ? colors.accent : colors.amber }]}>
             {patientName !== 'Patient' ? patientName : 'Care'}
           </Text>
         </View>
-      </View>
+      </RNAnimated.View>
 
       {/* Status */}
       <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>

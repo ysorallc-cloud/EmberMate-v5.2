@@ -56,7 +56,6 @@ const BUCKET_COLOR_MAP: Record<BucketType, string> = {
   activity: '#FBBF24',
   wellness: '#F87171',
   appointments: '#A78BFA',
-  custom: '#C4B5FD',
 };
 
 // ============================================================================

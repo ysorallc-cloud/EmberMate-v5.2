@@ -333,7 +333,7 @@ export default function QuickLogMoreScreen() {
       if (result) {
         emitDataUpdate(EVENT.MEDICATION);
         emitDataUpdate(EVENT.DAILY_INSTANCES);
-        try { await emitMedicationEvent(result.instance.itemId, result.instance.itemName, outcome, { source: 'quick_log' }); } catch {}
+        try { await emitMedicationEvent(result.instance.carePlanItemId, result.instance.itemName, outcome, { source: 'quick_log' }); } catch {}
         await hapticSuccess();
         showToast(`${result.instance.itemName} ${outcome === 'taken' ? 'logged' : 'skipped'}`);
       }
@@ -376,7 +376,7 @@ export default function QuickLogMoreScreen() {
         quality: sleepQuality,
       });
       emitDataUpdate(EVENT.LOGS);
-      try { await emitSleepEvent(hours, sleepQuality, { source: 'quick_log' }); } catch {}
+      try { await emitSleepEvent(hours, String(sleepQuality), { source: 'quick_log' }); } catch {}
       await hapticSuccess();
       showToast('Sleep logged');
       setSleepHours('');
@@ -400,7 +400,7 @@ export default function QuickLogMoreScreen() {
         severity: symptomSeverity ?? undefined,
       });
       emitDataUpdate(EVENT.SYMPTOMS);
-      try { await emitSymptomEvent(trimmed, symptomSeverity ?? 'unknown', { source: 'quick_log' }); } catch {}
+      try { await emitSymptomEvent(trimmed, symptomSeverity != null ? String(symptomSeverity) : 'unknown', { source: 'quick_log' }); } catch {}
       await hapticSuccess();
       showToast('Symptom logged');
       setSymptomText('');

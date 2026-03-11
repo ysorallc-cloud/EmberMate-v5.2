@@ -11,6 +11,8 @@ interface NextActionCardProps {
     sub: string;
     emoji: string;
     isMed?: boolean;
+    isBatch?: boolean;
+    batchIds?: string[];
     overdue?: boolean;
   } | null;
   appointment: {
@@ -19,7 +21,7 @@ interface NextActionCardProps {
     time: string;
   } | null;
   currentTimeWindow: string;
-  onConfirm: (taskId: string) => void;
+  onConfirm: (taskId: string, batchIds?: string[]) => void;
   onPrepVisit: () => void;
 }
 
@@ -78,9 +80,9 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
                 <Text style={[styles.cardSub, { color: colors.textMuted }]}>{nextTask.sub}</Text>
               </View>
               <TouchableOpacity
-                onPress={() => onConfirm(nextTask.id)}
+                onPress={() => onConfirm(nextTask.id, nextTask.batchIds)}
                 activeOpacity={0.7}
-                accessibilityLabel={nextTask.isMed ? 'Confirm all medications' : 'Mark as done'}
+                accessibilityLabel={nextTask.isBatch ? `Confirm ${nextTask.batchIds?.length} medications` : nextTask.isMed ? 'Confirm medication' : 'Mark as done'}
                 accessibilityRole="button"
               >
                 <LinearGradient
@@ -90,7 +92,7 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
                   style={styles.confirmBtn}
                 >
                   <Text style={[styles.confirmText, { color: colors.textPrimary }]}>
-                    {nextTask.isMed ? 'Confirm All' : 'Done'}
+                    {nextTask.isBatch ? 'Confirm All' : nextTask.isMed ? 'Confirm' : 'Done'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -107,9 +109,9 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
                 <Text style={[styles.cardSub, { color: colors.textMuted }]}>{nextTask.sub}</Text>
               </View>
               <TouchableOpacity
-                onPress={() => onConfirm(nextTask.id)}
+                onPress={() => onConfirm(nextTask.id, nextTask.batchIds)}
                 activeOpacity={0.7}
-                accessibilityLabel={nextTask.isMed ? 'Confirm all medications' : 'Mark as done'}
+                accessibilityLabel={nextTask.isBatch ? `Confirm ${nextTask.batchIds?.length} medications` : nextTask.isMed ? 'Confirm medication' : 'Mark as done'}
                 accessibilityRole="button"
               >
                 <LinearGradient
@@ -119,7 +121,7 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
                   style={styles.confirmBtnHoriz}
                 >
                   <Text style={[styles.confirmText, { color: colors.textPrimary }]}>
-                    {nextTask.isMed ? 'Confirm All' : 'Done'}
+                    {nextTask.isBatch ? 'Confirm All' : nextTask.isMed ? 'Confirm' : 'Done'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

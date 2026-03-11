@@ -84,7 +84,7 @@ export function generateCareInsight(
   }
 
   // Diabetes med taken + no water + past noon
-  if (completedDiabetesMed && (stats.hydration?.completed ?? 0) === 0 && currentHour >= 12) {
+  if (completedDiabetesMed && (stats.water?.completed ?? 0) === 0 && currentHour >= 12) {
     const medName = completedDiabetesMed.itemName || 'diabetes medication';
     return {
       icon: '💧',

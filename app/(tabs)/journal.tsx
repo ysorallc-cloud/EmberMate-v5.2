@@ -50,6 +50,11 @@ import {
 } from '../../utils/journalReflections';
 import { useCoffeeMoment } from '../../hooks/useCoffeeMoment';
 import { CoffeeMomentMinimal } from '../../components/CoffeeMomentMinimal';
+import { generateCareInsight, RecentHistory } from '../../utils/careInsights';
+import { listLogsInRange } from '../../storage/carePlanRepo';
+import { getVitalsInRange } from '../../utils/vitalsStorage';
+import { DEFAULT_PATIENT_ID } from '../../types/patient';
+import type { TodayStats } from '../../utils/nowHelpers';
 
 // ============================================================================
 // HELPERS
@@ -285,7 +290,139 @@ export default function JournalTab() {
   };
 
   // ============================================================================
-  // RENDER — AUTH GATE
+  // COMPUTED VALUES (must be before early returns to keep hooks stable)
+  // ============================================================================
+  const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const hour = new Date().getHours();
+  const medsDone = brief?.medications.filter(m => m.status === 'completed' || m.status === 'skipped').length ?? 0;
+  const medsTotal = brief?.medications.length ?? 0;
+  const allMedsDone = medsDone === medsTotal && medsTotal > 0;
+  const medsMissed = brief?.medications.filter(m => m.status === 'missed').length ?? 0;
+
+  const mealsDone = brief?.meals.meals.filter(m => m.status === 'completed' || m.status === 'skipped').length ?? 0;
+  const mealsTotal = brief?.meals.total ?? 0;
+  const mealsMissed = brief?.meals.meals.filter(m => m.status === 'missed').length ?? 0;
+
+  const hasVitals = brief?.vitals.recorded ?? false;
+  const wellnessDone = brief?.wellnessChecks.done ?? 0;
+  const wellnessTotal = brief?.wellnessChecks.total ?? 0;
+  const hasMorning = brief?.mood.morningWellness != null;
+  const hasEvening = brief?.mood.eveningWellness != null;
+
+  const waterGlasses = brief?.hydration.glasses ?? 0;
+
+  // Appointment
+  const daysUntilAppt = brief?.nextAppointment
+    ? Math.max(0, Math.ceil((new Date(brief.nextAppointment.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const showAppointment = brief?.nextAppointment && daysUntilAppt != null && daysUntilAppt <= 7;
+
+  // ============================================================================
+  // REFLECTIONS (generated where computed stats are available)
+  // ============================================================================
+  const reflections: JournalReflection[] = brief
+    ? generateReflections(brief, {
+        medsDone, medsTotal, mealsDone, mealsTotal,
+        waterGlasses, wellnessDone, wellnessTotal,
+        hasVitals, hasMorning, hasEvening,
+      })
+    : [];
+
+  // ============================================================================
+  // WATCH INSIGHTS — pattern insights from multi-day history
+  // ============================================================================
+  const [recentHistory, setRecentHistory] = useState<RecentHistory | null>(null);
+
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const end = getTodayDateString();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7);
+        const start = startDate.toISOString().split('T')[0];
+
+        const [logs, vitals] = await Promise.all([
+          listLogsInRange(DEFAULT_PATIENT_ID, start, end),
+          getVitalsInRange(start, end),
+        ]);
+
+        const fiveDaysAgo = new Date();
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+        const fiveDaysStr = fiveDaysAgo.toISOString().split('T')[0];
+        const recentDates = new Set<string>();
+        const lunchDates = new Set<string>();
+        for (const log of logs) {
+          if (log.date >= fiveDaysStr) {
+            recentDates.add(log.date);
+            if (log.data && 'mealType' in log.data && (log.data as any).mealType === 'lunch') {
+              lunchDates.add(log.date);
+            }
+          }
+        }
+        const daysWithData = recentDates.size;
+        const lunchSkipCount = Math.max(0, Math.min(daysWithData, 5) - lunchDates.size);
+
+        const systolicReadings = vitals.filter(v => v.type === 'systolic');
+        const diastolicReadings = vitals.filter(v => v.type === 'diastolic');
+        const avgSystolic = systolicReadings.length >= 3
+          ? systolicReadings.reduce((sum, v) => sum + v.value, 0) / systolicReadings.length
+          : null;
+        const avgDiastolic = diastolicReadings.length >= 3
+          ? diastolicReadings.reduce((sum, v) => sum + v.value, 0) / diastolicReadings.length
+          : null;
+
+        const medLogsByDate = new Map<string, number>();
+        const medTotalByDate = new Map<string, number>();
+        for (const log of logs) {
+          if (log.outcome === 'completed' || log.outcome === 'skipped') {
+            medLogsByDate.set(log.date, (medLogsByDate.get(log.date) || 0) + 1);
+          }
+          medTotalByDate.set(log.date, (medTotalByDate.get(log.date) || 0) + 1);
+        }
+        let consecutiveMedDays = 0;
+        const checkDate = new Date();
+        for (let i = 0; i < 14; i++) {
+          const dateStr = checkDate.toISOString().split('T')[0];
+          const completed = medLogsByDate.get(dateStr) || 0;
+          const total = medTotalByDate.get(dateStr) || 0;
+          if (total > 0 && completed === total) consecutiveMedDays++;
+          else if (total > 0) break;
+          checkDate.setDate(checkDate.getDate() - 1);
+        }
+
+        setRecentHistory({
+          lunchSkipCount,
+          avgSystolic,
+          avgDiastolic,
+          bpReadingCount: Math.max(systolicReadings.length, diastolicReadings.length),
+          consecutiveMedDays,
+          daysTracked: daysWithData,
+        });
+      } catch (err) {
+        logError('journal.loadHistory', err);
+      }
+    }
+    loadHistory();
+  }, []);
+
+  const watchInsight = useMemo(() => {
+    if (!brief || !recentHistory) return null;
+    const stats: TodayStats = {
+      meds: { completed: medsDone, total: medsTotal },
+      vitals: { completed: hasVitals ? 1 : 0, total: 1 },
+      meals: { completed: mealsDone, total: mealsTotal },
+      wellness: { completed: wellnessDone, total: wellnessTotal },
+      activity: { completed: 0, total: 0 },
+    };
+    const insight = generateCareInsight(stats, [], medsDone + mealsDone + wellnessDone, recentHistory, []);
+    // Only show pattern/preventative insights (not time-sensitive ones meant for Today)
+    if (insight && (insight.type === 'pattern' || insight.type === 'preventative')) return insight;
+    return null;
+  }, [brief, recentHistory, medsDone, medsTotal, medsMissed, mealsDone, mealsTotal, mealsMissed, hasVitals, wellnessDone, wellnessTotal]);
+
+  // ============================================================================
+  // EARLY RETURNS (after all hooks to satisfy Rules of Hooks)
   // ============================================================================
 
   if (authRequired) {
@@ -310,10 +447,6 @@ export default function JournalTab() {
       </View>
     );
   }
-
-  const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const hour = new Date().getHours();
 
   if (loading && !brief) {
     return (
@@ -349,43 +482,6 @@ export default function JournalTab() {
       </View>
     );
   }
-
-  // ============================================================================
-  // COMPUTED VALUES
-  // ============================================================================
-  const medsDone = brief?.medications.filter(m => m.status === 'completed' || m.status === 'skipped').length ?? 0;
-  const medsTotal = brief?.medications.length ?? 0;
-  const allMedsDone = medsDone === medsTotal && medsTotal > 0;
-  const medsMissed = brief?.medications.filter(m => m.status === 'missed').length ?? 0;
-
-  const mealsDone = brief?.meals.meals.filter(m => m.status === 'completed' || m.status === 'skipped').length ?? 0;
-  const mealsTotal = brief?.meals.total ?? 0;
-  const mealsMissed = brief?.meals.meals.filter(m => m.status === 'missed').length ?? 0;
-
-  const hasVitals = brief?.vitals.recorded ?? false;
-  const wellnessDone = brief?.wellnessChecks.done ?? 0;
-  const wellnessTotal = brief?.wellnessChecks.total ?? 0;
-  const hasMorning = brief?.mood.morningWellness != null;
-  const hasEvening = brief?.mood.eveningWellness != null;
-
-  const waterGlasses = brief?.hydration.glasses ?? 0;
-
-  // Appointment
-  const daysUntilAppt = brief?.nextAppointment
-    ? Math.max(0, Math.ceil((new Date(brief.nextAppointment.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
-  const showAppointment = brief?.nextAppointment && daysUntilAppt != null && daysUntilAppt <= 7;
-
-  // ============================================================================
-  // REFLECTIONS (generated where computed stats are available)
-  // ============================================================================
-  const reflections: JournalReflection[] = brief
-    ? generateReflections(brief, {
-        medsDone, medsTotal, mealsDone, mealsTotal,
-        waterGlasses, wellnessDone, wellnessTotal,
-        hasVitals, hasMorning, hasEvening,
-      })
-    : [];
 
   // ============================================================================
   // HELPERS FOR SHARE (glanceStats + handoffNotes still needed by report builder)
@@ -764,12 +860,28 @@ export default function JournalTab() {
             </View>
           )}
 
-          {/* ═══ WHAT STANDS OUT — reflections inline ═══ */}
-          {reflections.length > 0 && (
+          {/* ═══ WHAT STANDS OUT — reflections + watch insights ═══ */}
+          {(reflections.length > 0 || watchInsight) && (
             <>
               <View style={s.sectionHeader}>
                 <Text style={s.sectionTitle}>What Stands Out</Text>
               </View>
+
+              {/* Watch insight (pattern/trend) */}
+              {watchInsight && (
+                <View style={s.watchCard}>
+                  <View style={s.watchBorder} />
+                  <View style={s.watchContent}>
+                    <View style={s.reflectionHeader}>
+                      <Text style={s.reflectionIcon}>{watchInsight.icon}</Text>
+                      <Text style={s.watchTitle}>{watchInsight.title}</Text>
+                    </View>
+                    <Text style={s.watchMessage}>{watchInsight.message}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Reflections */}
               {(reflectionsExpanded ? reflections : reflections.slice(0, 2)).map((ref) => {
                 const isAttention = ref.category === 'nutrition' || ref.category === 'hydration';
                 return (
@@ -1190,6 +1302,37 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
 
   // ─── REFLECTIONS ───
+  watchCard: {
+    flexDirection: 'row',
+    backgroundColor: c.cardBackground,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: c.amberBorder,
+    marginBottom: 14,
+    overflow: 'hidden',
+  },
+  watchBorder: {
+    width: 4,
+    backgroundColor: c.amber,
+  },
+  watchContent: {
+    flex: 1,
+    padding: 18,
+    gap: 6,
+  },
+  watchTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: c.amber,
+    lineHeight: 20,
+  },
+  watchMessage: {
+    fontSize: 14,
+    color: c.textSecondary,
+    lineHeight: 20,
+    paddingLeft: 28,
+  },
   reflectionCard: {
     backgroundColor: c.cardBackground,
     borderRadius: 16,

@@ -24,6 +24,8 @@ import { Colors, Spacing, BorderRadius } from '../../../theme/theme-tokens';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { updatePatient } from '../../../storage/patientRegistry';
 import { saveCarePlanConfig } from '../../../storage/carePlanConfigRepo';
+import { getActiveCarePlan, createCarePlan, upsertCarePlanItem } from '../../../storage/carePlanRepo';
+import { generateUniqueId } from '../../../utils/idGenerator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StorageKeys } from '../../../utils/storageKeys';
 import {
@@ -34,6 +36,7 @@ import {
   ConcernArea,
   CheckInCadence,
 } from '../../../utils/onboardingToPlan';
+import type { CarePlanItem } from '../../../types/carePlan';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -41,7 +44,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TOTAL_STEPS = 5; // 0=name, 1-4=questions
+const TOTAL_STEPS = 6; // 0=name, 1-4=questions, 5=first medication
 
 // ── Step option definitions ──
 
@@ -76,6 +79,12 @@ const CADENCE_OPTIONS: { value: CheckInCadence; label: string; desc: string }[] 
   { value: 'flexible', label: 'Flexible', desc: "I'll log when I can" },
 ];
 
+const MED_FREQ_OPTIONS: { value: 'once' | 'twice' | 'three'; label: string }[] = [
+  { value: 'once', label: 'Morning' },
+  { value: 'twice', label: 'Twice daily' },
+  { value: 'three', label: 'Three times' },
+];
+
 // ── Component ──
 
 interface Props {
@@ -96,6 +105,13 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
   const [careAreas, setCareAreas] = useState<CareArea[]>([]);
   const [concerns, setConcerns] = useState<ConcernArea[]>([]);
   const [cadence, setCadence] = useState<CheckInCadence | null>(null);
+
+  // First medication step
+  const [medName, setMedName] = useState('');
+  const [medFreq, setMedFreq] = useState<'once' | 'twice' | 'three'>('once');
+  const [mealReminders, setMealReminders] = useState(true);
+  const [medAdded, setMedAdded] = useState(false);
+  const [medSkipped, setMedSkipped] = useState(false);
 
   const isSelf = careMode === 'self';
 
@@ -125,6 +141,68 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
     );
   };
 
+  const saveFirstMedication = async (carePlanId: string) => {
+    const name = medName.trim();
+    if (!name) return;
+
+    const timeWindows = medFreq === 'three'
+      ? [
+          { id: generateUniqueId(), kind: 'window' as const, label: 'morning' as const },
+          { id: generateUniqueId(), kind: 'window' as const, label: 'afternoon' as const },
+          { id: generateUniqueId(), kind: 'window' as const, label: 'evening' as const },
+        ]
+      : medFreq === 'twice'
+      ? [
+          { id: generateUniqueId(), kind: 'window' as const, label: 'morning' as const },
+          { id: generateUniqueId(), kind: 'window' as const, label: 'evening' as const },
+        ]
+      : [{ id: generateUniqueId(), kind: 'window' as const, label: 'morning' as const }];
+
+    const now = new Date().toISOString();
+    const item: CarePlanItem = {
+      id: generateUniqueId(),
+      carePlanId,
+      type: 'medication',
+      name,
+      priority: 'required',
+      active: true,
+      emoji: '\uD83D\uDC8A',
+      schedule: { frequency: 'daily', times: timeWindows },
+      medicationDetails: { dose: '', unit: '', route: 'oral' },
+      createdAt: now,
+      updatedAt: now,
+    };
+    await upsertCarePlanItem(item);
+  };
+
+  const saveMealReminders = async (carePlanId: string) => {
+    const now = new Date().toISOString();
+    const meals = [
+      { name: 'Breakfast', label: 'morning' as const, emoji: '\uD83C\uDF73' },
+      { name: 'Lunch', label: 'afternoon' as const, emoji: '\uD83C\uDF7D\uFE0F' },
+      { name: 'Dinner', label: 'evening' as const, emoji: '\uD83C\uDF5D' },
+    ];
+    for (const meal of meals) {
+      const item: CarePlanItem = {
+        id: generateUniqueId(),
+        carePlanId,
+        type: 'nutrition',
+        name: meal.name,
+        priority: 'recommended',
+        active: true,
+        emoji: meal.emoji,
+        schedule: {
+          frequency: 'daily',
+          times: [{ id: generateUniqueId(), kind: 'window', label: meal.label }],
+        },
+        nutritionDetails: { mealType: meal.name.toLowerCase() },
+        createdAt: now,
+        updatedAt: now,
+      };
+      await upsertCarePlanItem(item);
+    }
+  };
+
   const handleComplete = async (seedData: boolean) => {
     setLoadingMessage(seedData ? 'Creating sample data...' : 'Setting things up...');
     setIsLoading(true);
@@ -145,6 +223,17 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
 
         const config = generateCarePlanFromOnboarding(fullAnswers);
         await saveCarePlanConfig(config);
+
+        // Create care plan and add first items
+        let plan = await getActiveCarePlan();
+        if (!plan) plan = await createCarePlan();
+
+        if (medAdded && medName.trim()) {
+          await saveFirstMedication(plan.id);
+        }
+        if (mealReminders && careAreas.includes('meals')) {
+          await saveMealReminders(plan.id);
+        }
       } catch {}
     }
 
@@ -286,7 +375,7 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
     </>
   );
 
-  // ── Step 4: Cadence (single) + finish ──
+  // ── Step 4: Cadence (single) ──
   const renderCadenceStep = () => (
     <>
       <Text style={styles.stepQuestion}>When do you usually check in?</Text>
@@ -294,7 +383,7 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
         <TouchableOpacity
           key={opt.value}
           style={[styles.singleCard, cadence === opt.value && styles.singleCardActive]}
-          onPress={() => setCadence(opt.value)}
+          onPress={() => { setCadence(opt.value); goNext(); }}
           activeOpacity={0.8}
         >
           <View style={{ flex: 1 }}>
@@ -305,8 +394,102 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
           </View>
         </TouchableOpacity>
       ))}
+    </>
+  );
 
-      {cadence && (
+  // ── Step 5: First medication (skippable) + finish ──
+  const showMedsPrompt = careAreas.includes('medications');
+  const showMealsPrompt = careAreas.includes('meals');
+
+  const handleAddMed = () => {
+    if (medName.trim()) {
+      setMedAdded(true);
+    }
+  };
+
+  const renderFirstMedStep = () => (
+    <>
+      {showMedsPrompt && !medAdded && !medSkipped && (
+        <>
+          <Text style={styles.stepQuestion}>
+            {isSelf ? "Let's add your most important one" : "Let's add the most important one"}
+          </Text>
+          <Text style={styles.stepHint}>You can add more anytime in Care Plan</Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Medication name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Lisinopril, Metformin"
+              placeholderTextColor={colors.textSecondary}
+              value={medName}
+              onChangeText={setMedName}
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+          </View>
+
+          <Text style={[styles.inputLabel, { textAlign: 'center', marginBottom: 8 }]}>How often?</Text>
+          <View style={styles.freqRow}>
+            {MED_FREQ_OPTIONS.map(opt => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[styles.chip, medFreq === opt.value && styles.chipActive]}
+                onPress={() => setMedFreq(opt.value)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipLabel, medFreq === opt.value && styles.chipLabelActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.nextBtn, !medName.trim() && styles.nextBtnDisabled]}
+            onPress={handleAddMed}
+            disabled={!medName.trim()}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.nextBtnText}>Add</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {showMedsPrompt && medAdded && (
+        <Animated.View entering={FadeInDown.duration(300)} style={styles.medAddedCard}>
+          <Text style={styles.medAddedEmoji}>{'\uD83D\uDC8A'}</Text>
+          <Text style={[styles.cardLabel, { color: colors.accent }]}>
+            {medName} added
+          </Text>
+          <Text style={styles.cardDesc}>
+            {medFreq === 'once' ? 'Morning' : medFreq === 'twice' ? 'Twice daily' : 'Three times a day'}
+          </Text>
+        </Animated.View>
+      )}
+
+      {showMealsPrompt && (
+        <TouchableOpacity
+          style={[styles.mealToggle, mealReminders && styles.mealToggleActive]}
+          onPress={() => setMealReminders(!mealReminders)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.chipIcon}>{'\uD83C\uDF7D\uFE0F'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cardLabel, mealReminders && { color: colors.accent }]}>
+              Meal reminders
+            </Text>
+            <Text style={styles.cardDesc}>Breakfast, lunch, and dinner</Text>
+          </View>
+          <View style={[styles.toggleDot, mealReminders && styles.toggleDotActive]} />
+        </TouchableOpacity>
+      )}
+
+      {!showMedsPrompt && !showMealsPrompt && (
+        <Text style={styles.stepQuestion}>You're all set!</Text>
+      )}
+
+      {(medAdded || medSkipped || !showMedsPrompt) && (
         <>
           <TouchableOpacity
             style={styles.optionCard}
@@ -333,6 +516,16 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
           </TouchableOpacity>
         </>
       )}
+
+      {showMedsPrompt && !medAdded && !medSkipped && (
+        <TouchableOpacity
+          style={styles.skipLink}
+          onPress={() => setMedSkipped(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.skipLinkText}>Skip for now</Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 
@@ -354,6 +547,7 @@ export const GetStartedScreen: React.FC<Props> = ({ onComplete, careMode = 'care
         {step === 2 && renderCareAreasStep()}
         {step === 3 && renderConcernsStep()}
         {step === 4 && renderCadenceStep()}
+        {step === 5 && renderFirstMedStep()}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -462,7 +656,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   singleCardActive: {
     borderColor: c.accent,
-    backgroundColor: 'rgba(20,184,166,0.08)',
+    backgroundColor: c.accentGlow,
   },
   cardIcon: {
     fontSize: 24,
@@ -502,7 +696,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   chipActive: {
     borderColor: c.accent,
-    backgroundColor: 'rgba(20,184,166,0.08)',
+    backgroundColor: c.accentGlow,
   },
   chipIcon: {
     fontSize: 16,
@@ -557,6 +751,64 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     fontSize: 13,
     color: c.textSecondary,
     textAlign: 'center',
+  },
+
+  // First med step
+  freqRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  medAddedCard: {
+    alignItems: 'center',
+    backgroundColor: c.glass,
+    borderWidth: 1,
+    borderColor: c.accent,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    gap: 4,
+  },
+  medAddedEmoji: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  mealToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: c.glass,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  mealToggleActive: {
+    borderColor: c.accent,
+    backgroundColor: c.accentGlow,
+  },
+  toggleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: c.border,
+  },
+  toggleDotActive: {
+    borderColor: c.accent,
+    backgroundColor: c.accent,
+  },
+  skipLink: {
+    alignItems: 'center',
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  skipLinkText: {
+    fontSize: 14,
+    color: c.textSecondary,
   },
 
   // Loading overlay

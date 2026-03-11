@@ -49,12 +49,32 @@ function ConfidenceBadge({ level, colors }: { level: ConfidenceLevel; colors: ty
   const { color, bg } = config[level];
 
   return (
-    <View style={[styles.confidenceBadge, { backgroundColor: bg }]}>
-      <View style={[styles.confidenceDot, { backgroundColor: color }]} />
-      <Text style={[styles.confidenceText, { color }]}>{labels[level]}</Text>
+    <View style={[badgeStyles.confidenceBadge, { backgroundColor: bg }]}>
+      <View style={[badgeStyles.confidenceDot, { backgroundColor: color }]} />
+      <Text style={[badgeStyles.confidenceText, { color }]}>{labels[level]}</Text>
     </View>
   );
 }
+
+const badgeStyles = StyleSheet.create({
+  confidenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 5,
+  },
+  confidenceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  confidenceText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+});
 
 // ============================================================================
 // MAIN COMPONENT
@@ -241,25 +261,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: c.textTertiary,
     lineHeight: 19,
     fontStyle: 'italic',
-  },
-
-  // Confidence Badge
-  confidenceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 5,
-  },
-  confidenceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  confidenceText: {
-    fontSize: 10,
-    fontWeight: '600',
   },
 
   // Empty state

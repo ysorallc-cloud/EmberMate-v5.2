@@ -3,7 +3,7 @@ describe('Before Bed deduplication', () => {
   test('source file uses seenLabels dedup alongside seenRoutes', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../app/(tabs)/today'),
+      require.resolve('../components/now/BeforeBedSection'),
       'utf8'
     );
     expect(src).toContain('seenLabels');

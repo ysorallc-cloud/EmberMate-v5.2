@@ -335,4 +335,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
 });
 
+// Static styles for standalone helper components (SubCardIcon, SubCardContent, etc.)
+const styles = createStyles(Colors);
+
 export default SubCard;

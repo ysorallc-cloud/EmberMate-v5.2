@@ -36,7 +36,6 @@ import { exportBackup, clearAllData } from '../../utils/cloudBackup';
 import { deleteAllUserData } from '../../utils/privacyUtils';
 import { AppStrings } from '../../constants/strings';
 import { logError } from '../../utils/devLog';
-import { checkFeatureAccess } from '../../utils/featureGate';
 
 // Settings category definitions
 interface SettingItem {
@@ -400,14 +399,7 @@ export default function SettingsScreen() {
             ? `${caregiverCount} connected \u00B7 Manage caregivers, sharing & activity`
             : 'Manage caregivers, family sharing & activity',
           color: 'rgba(96, 165, 250, 0.14)',
-          onPress: async () => {
-            const result = await checkFeatureAccess('care_team');
-            if (result.allowed) {
-              router.push('/caregiver-management');
-            } else {
-              router.push('/upgrade');
-            }
-          },
+          onPress: () => router.push('/caregiver-management'),
         },
       ],
     },
