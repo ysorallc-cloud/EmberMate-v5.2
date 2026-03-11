@@ -33,7 +33,7 @@ import { EVENT } from '../../lib/eventNames';
 import { isBiometricEnabled, shouldLockSession, requireAuthentication, updateLastActivity, getAutoLockTimeout } from '../../utils/biometricAuth';
 import { getNotesLogs, NotesLog } from '../../utils/centralStorage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
+// Svg/Circle removed — ValueRing tiles moved to Today only
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { getMedicalInfo, MedicalInfo } from '../../utils/medicalInfo';
 import { safeGetItem } from '../../utils/safeStorage';
@@ -73,88 +73,6 @@ function formatTime(t: string): string {
   const min = parts[1];
   const period = hr >= 12 ? 'PM' : 'AM';
   return `${hr % 12 || 12}:${min} ${period}`;
-}
-
-// ============================================================================
-// VALUE RING — SVG ring displaying a recorded value
-// Matches ProgressRings visual language but for data values, not task progress
-// ============================================================================
-
-const VALUE_RING_SIZE = 62;
-const VALUE_RING_STROKE = 4;
-const VALUE_RING_RADIUS = (VALUE_RING_SIZE - VALUE_RING_STROKE) / 2;
-const VALUE_RING_CIRCUMFERENCE = 2 * Math.PI * VALUE_RING_RADIUS;
-
-function ValueRing({
-  value,
-  label,
-  color,
-  fillPct,
-}: {
-  value: string;
-  label: string;
-  color: string;
-  fillPct: number;
-}) {
-  const dashArray = Math.min(fillPct / 100, 1) * VALUE_RING_CIRCUMFERENCE;
-  const hasData = fillPct > 0;
-
-  return (
-    <View style={{ alignItems: 'center', flex: 1 }}>
-      <View style={{ width: VALUE_RING_SIZE, height: VALUE_RING_SIZE, position: 'relative' }}>
-        <Svg width={VALUE_RING_SIZE} height={VALUE_RING_SIZE} style={{ transform: [{ rotate: '-90deg' }] }}>
-          <Circle
-            cx={VALUE_RING_SIZE / 2}
-            cy={VALUE_RING_SIZE / 2}
-            r={VALUE_RING_RADIUS}
-            fill="none"
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth={VALUE_RING_STROKE}
-          />
-          {hasData && (
-            <Circle
-              cx={VALUE_RING_SIZE / 2}
-              cy={VALUE_RING_SIZE / 2}
-              r={VALUE_RING_RADIUS}
-              fill="none"
-              stroke={color}
-              strokeWidth={VALUE_RING_STROKE}
-              strokeDasharray={`${dashArray} ${VALUE_RING_CIRCUMFERENCE}`}
-              strokeLinecap="round"
-              opacity={0.8}
-            />
-          )}
-        </Svg>
-        <View style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <Text style={{
-            fontSize: value.length > 4 ? 10 : value.length > 3 ? 12 : 14,
-            fontWeight: '700',
-            color: hasData ? color : Colors.textDisabled,
-          }}>
-            {value}
-          </Text>
-        </View>
-      </View>
-      <Text style={{
-        fontSize: 9,
-        fontWeight: '600',
-        letterSpacing: 1,
-        color: Colors.textMuted,
-        textTransform: 'uppercase',
-        marginTop: 6,
-      }}>
-        {label}
-      </Text>
-    </View>
-  );
 }
 
 // ============================================================================
@@ -596,63 +514,7 @@ export default function JournalTab() {
     return items;
   }
 
-  // ── Ring tiles for recorded values (not task ratios) ──
-  type RingTile = { bucket: string; label: string; value: string; color: string; fillPct: number };
-
-  const ringTiles: RingTile[] = [];
-
-  // Vitals readings — actual measured values
-  if (hasVitals && brief?.vitals?.readings) {
-    const r = brief.vitals.readings;
-    if (r.systolic != null && r.diastolic != null) {
-      // fillPct: normalized BP position between 90 (low) and 180 (critical)
-      const bpPct = Math.min(Math.max(((r.systolic - 90) / 90) * 100, 10), 95);
-      ringTiles.push({
-        bucket: 'vitals-bp',
-        label: 'BP',
-        value: `${r.systolic}/${r.diastolic}`,
-        color: dotColorToStyle(getVitalsDotColor()),
-        fillPct: bpPct,
-      });
-    }
-    if (r.heartRate != null) {
-      const hrPct = Math.min(Math.max(((r.heartRate - 40) / 80) * 100, 10), 95);
-      ringTiles.push({
-        bucket: 'vitals-hr',
-        label: 'HR',
-        value: `${r.heartRate}`,
-        color: dotColorToStyle('green'),
-        fillPct: hrPct,
-      });
-    }
-    if (r.temperature != null) {
-      const tempPct = Math.min(Math.max(((r.temperature - 96) / 5) * 100, 10), 95);
-      ringTiles.push({
-        bucket: 'vitals-temp',
-        label: 'Temp',
-        value: `${r.temperature}`,
-        color: dotColorToStyle('green'),
-        fillPct: tempPct,
-      });
-    }
-  }
-
-  // Sleep
-  const sleepVal = getSleepValue();
-  const sleepPct = brief?.sleep?.hours ? Math.min((brief.sleep.hours / 9) * 100, 95) : 0;
-  ringTiles.push({
-    bucket: 'sleep',
-    label: 'Sleep',
-    value: sleepVal,
-    color: dotColorToStyle(getSleepDotColor()),
-    fillPct: sleepPct,
-  });
-
-  // Limit to 4 tiles max for layout
-  const displayRingTiles = ringTiles.slice(0, 4);
-  const hasAnyRingData = ringTiles.some(t => t.fillPct > 0);
-
-  // ── Legacy glance stats for share/report builders ──
+  // ── Glance stats for share/report builders ──
   const reportGlanceTiles: { bucket: string; label: string; value: string; color: string }[] = [
     { bucket: 'meds',     label: 'Meds',     value: `${medsDone}/${medsTotal}`,   color: dotColorToStyle(getMedsDotColor()) },
     { bucket: 'meals',    label: 'Meals',     value: `${mealsDone}/${mealsTotal}`, color: dotColorToStyle(getMealsDotColor()) },
@@ -812,33 +674,6 @@ export default function JournalTab() {
             </View>
           )}
 
-          {/* ═══ DAY AT A GLANCE — Ring tiles ═══ */}
-          {hasAnyRingData && (
-            <>
-              <View style={s.sectionHeader}>
-                <Text style={s.sectionTitle}>Recorded today</Text>
-              </View>
-              <View style={s.glanceGrid}>
-                {displayRingTiles.map(tile => (
-                  <ValueRing
-                    key={tile.bucket}
-                    value={tile.value}
-                    label={tile.label}
-                    color={tile.color}
-                    fillPct={tile.fillPct}
-                  />
-                ))}
-              </View>
-            </>
-          )}
-          {!hasAnyRingData && (medsTotal > 0 || mealsTotal > 0) && (
-            <View style={s.noDataCard}>
-              <Text style={s.noDataText}>
-                No vitals or sleep recorded today. Log from the Today tab to see values here.
-              </Text>
-            </View>
-          )}
-
           {/* ═══ NARRATIVE ═══ */}
           <Text style={s.narrativeText}>
             {brief
@@ -864,7 +699,7 @@ export default function JournalTab() {
           {(reflections.length > 0 || watchInsight) && (
             <>
               <View style={s.sectionHeader}>
-                <Text style={s.sectionTitle}>What Stands Out</Text>
+                <Text style={s.sectionTitle}>Keep an Eye On</Text>
               </View>
 
               {/* Watch insight (pattern/trend) */}
@@ -916,25 +751,42 @@ export default function JournalTab() {
             </>
           )}
 
-          {/* ═══ TODAY'S LOG — chronological events ═══ */}
+          {/* ═══ IF YOU'RE HANDING OFF — done ✓ then open ○ ═══ */}
           {brief && (() => {
             const logItems = buildHandoffNotes();
             if (logItems.length === 0) return null;
+            const doneItems = logItems.filter(i => i.type === 'done');
+            const openItems = logItems.filter(i => i.type === 'watch' || i.type === 'flag');
             return (
               <>
                 <View style={s.sectionHeader}>
-                  <Text style={s.sectionTitle}>{"Today\u0027s Log"}</Text>
+                  <Text style={s.sectionTitle}>If You're Handing Off</Text>
                 </View>
                 <View style={s.logCard}>
-                  {logItems.map((item, i) => (
+                  {doneItems.map((item, i) => (
                     <View
-                      key={`log-${i}`}
+                      key={`done-${i}`}
                       style={[
                         s.logRow,
-                        i < logItems.length - 1 && s.logRowBorder,
+                        (i < doneItems.length - 1 || openItems.length > 0) && s.logRowBorder,
                       ]}
                     >
-                      <Text style={s.logIcon}>{item.icon}</Text>
+                      <Text style={s.logStatusIcon}>{'\u2713'}</Text>
+                      <Text style={s.logText}>{item.text}</Text>
+                    </View>
+                  ))}
+                  {doneItems.length > 0 && openItems.length > 0 && (
+                    <View style={s.handoffDivider} />
+                  )}
+                  {openItems.map((item, i) => (
+                    <View
+                      key={`open-${i}`}
+                      style={[
+                        s.logRow,
+                        i < openItems.length - 1 && s.logRowBorder,
+                      ]}
+                    >
+                      <Text style={s.logStatusIcon}>{'\u25CB'}</Text>
                       <Text style={s.logText}>{item.text}</Text>
                     </View>
                   ))}
@@ -943,15 +795,12 @@ export default function JournalTab() {
             );
           })()}
 
-          {/* ═══ UPCOMING ═══ */}
-          {(showAppointment || hasVitals) && (
-            <View style={s.sectionHeader}>
-              <Text style={s.sectionTitle}>Upcoming</Text>
-            </View>
-          )}
-
+          {/* ═══ COMING UP ═══ */}
           {showAppointment && brief?.nextAppointment && (
             <>
+              <View style={s.sectionHeader}>
+                <Text style={s.sectionTitle}>Coming Up</Text>
+              </View>
               <View style={s.appointmentCard}>
                 <Text style={s.appointmentIcon}>{'\uD83D\uDCC5'}</Text>
                 <View style={{ flex: 1 }}>
@@ -965,6 +814,13 @@ export default function JournalTab() {
                     {' \u00B7 '}
                     {daysUntilAppt === 0 ? 'Today' : daysUntilAppt === 1 ? 'Tomorrow' : `In ${daysUntilAppt} days`}
                   </Text>
+                  {watchInsight && (
+                    <Text style={s.appointmentAdvice}>
+                      {watchInsight.type === 'pattern'
+                        ? `Bring up: ${watchInsight.title.toLowerCase()}. ${watchInsight.message.split('.')[0]}.`
+                        : `Worth mentioning: ${watchInsight.message.split('.')[0]}.`}
+                    </Text>
+                  )}
                 </View>
               </View>
               <TouchableOpacity
@@ -1119,29 +975,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   authGateButton: { backgroundColor: c.accent, paddingHorizontal: 32, paddingVertical: 14, borderRadius: BorderRadius.lg },
   authGateButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
-  // ─── DAY AT A GLANCE GRID ───
-  glanceGrid: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-around' as const,
-    paddingVertical: 8,
-    marginBottom: 18,
-  },
-
-  // ─── NO DATA FALLBACK ───
-  noDataCard: {
-    backgroundColor: c.glassDim,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 18,
-    alignItems: 'center' as const,
-  },
-  noDataText: {
-    fontSize: 13,
-    color: c.textMuted,
-    textAlign: 'center' as const,
-    lineHeight: 19,
-  },
-
   // ─── APPOINTMENT CARD ───
   appointmentCard: {
     flexDirection: 'row',
@@ -1167,6 +1000,13 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: c.textSecondary,
     marginTop: 2,
   },
+  appointmentAdvice: {
+    fontSize: 12,
+    color: c.amber,
+    marginTop: 6,
+    lineHeight: 17,
+    fontStyle: 'italic',
+  },
 
   // ─── SAMPLE DATA INDICATOR ───
   sampleIndicator: {
@@ -1185,8 +1025,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // ─── HEADER ───
   journalHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: c.glassBorder,
     marginBottom: 4,
     paddingHorizontal: 20,
   },
@@ -1307,12 +1145,12 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: c.amberBorder,
+    borderColor: c.glassBorder,
     marginBottom: 14,
     overflow: 'hidden',
   },
   watchBorder: {
-    width: 4,
+    width: 3,
     backgroundColor: c.amber,
   },
   watchContent: {
@@ -1397,7 +1235,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // ─── REFLECTION ATTENTION ───
   reflectionCardAttention: {
-    backgroundColor: c.amberLight,
     borderColor: c.amberBorder,
   },
 
@@ -1424,11 +1261,23 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   logIcon: {
     fontSize: 14,
   },
+  logStatusIcon: {
+    fontSize: 14,
+    color: c.textMuted,
+    width: 20,
+    textAlign: 'center' as const,
+  },
   logText: {
     flex: 1,
     fontSize: 13,
     color: c.textSecondary,
     lineHeight: 18,
+  },
+  handoffDivider: {
+    height: 1,
+    backgroundColor: c.border,
+    marginHorizontal: 14,
+    marginVertical: 4,
   },
 
   // ─── FOOTER SHARE ACTIONS ───
@@ -1453,9 +1302,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: c.accent,
   },
   footerReportBtn: {
-    backgroundColor: c.purpleFaint,
+    backgroundColor: c.accentDim,
     borderWidth: 1,
-    borderColor: c.purpleBorder,
+    borderColor: c.accentBorder,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -1463,7 +1312,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   footerReportBtnText: {
     fontSize: 12,
     fontWeight: '500' as const,
-    color: c.purpleBright,
+    color: c.accent,
   },
 
   // ─── CAREGIVER PAUSE LINK ───

@@ -1,24 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-describe('Journal glance tiles show recorded values', () => {
+describe('Journal no longer shows ValueRing tiles (moved to Today)', () => {
   const filePath = path.resolve(__dirname, '../app/(tabs)/journal.tsx');
   const content = fs.readFileSync(filePath, 'utf-8');
 
-  test('tiles include BP reading from vitals', () => {
-    expect(content).toContain("label: 'BP'");
-    expect(content).toContain("bucket: 'vitals-bp'");
+  test('ValueRing component removed from journal', () => {
+    expect(content).not.toContain('function ValueRing');
+    expect(content).not.toContain('ringTiles.push(');
   });
 
-  test('tiles include heart rate from vitals', () => {
-    expect(content).toContain("bucket: 'vitals-hr'");
-    expect(content).toContain("label: 'HR'");
+  test('reportGlanceTiles still exists for share/report builders', () => {
+    expect(content).toContain('reportGlanceTiles');
   });
 
-  test('ringTiles uses push pattern for value-based tiles', () => {
-    // Ring tiles use push pattern with fillPct for SVG ring display
-    expect(content).toContain('ringTiles.push(');
-    expect(content).toContain('fillPct');
-    expect(content).toContain('ValueRing');
+  test('narrative is used instead of ring tiles', () => {
+    expect(content).toContain('generateEnhancedNarrative');
   });
 });

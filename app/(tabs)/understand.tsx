@@ -253,9 +253,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // Settings gear
   settingsGear: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
@@ -263,17 +263,17 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     justifyContent: 'center' as const,
   },
   settingsGearText: {
-    fontSize: 20,
+    fontSize: 18,
   },
 
   // Period summary
   summaryCard: {
-    backgroundColor: c.glass,
+    backgroundColor: c.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    padding: 18,
-    marginBottom: 20,
+    padding: 20,
+    marginBottom: 24,
   },
   summaryRow: {
     flexDirection: 'row' as const,
@@ -283,14 +283,16 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     alignItems: 'center' as const,
   },
   summaryValue: {
-    fontSize: 22,
-    fontWeight: '700' as const,
+    fontSize: 24,
+    fontWeight: '600' as const,
     color: c.textPrimary,
+    letterSpacing: -0.5,
   },
   summaryLabel: {
     fontSize: 11,
     color: c.textMuted,
-    marginTop: 4,
+    marginTop: 6,
+    letterSpacing: 0.5,
   },
 
   // Insight sections

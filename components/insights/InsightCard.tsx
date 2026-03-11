@@ -21,33 +21,27 @@ export function InsightCard({ insight, expandable = false }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const severityColor = {
-    watch: '#FF6B6B',
+    watch: colors.amber,
     good: colors.accent,
     info: colors.textSecondary,
   }[insight.severity];
 
-  const cardBorderColor = {
-    watch: colors.redBorder,
-    good: colors.greenBorder,
-    info: colors.accentBorder,
-  }[insight.severity];
-
-  const cardBg = {
-    watch: colors.redLight,
-    good: colors.greenLight,
-    info: colors.accentDim,
+  const dotColor = {
+    watch: colors.amber,
+    good: colors.green,
+    info: colors.textMuted,
   }[insight.severity];
 
   const Wrapper = expandable ? TouchableOpacity : View;
 
   return (
     <Wrapper
-      style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorderColor, borderLeftColor: cardBorderColor }]}
+      style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.glassBorder }]}
       {...(expandable ? { onPress: () => setExpanded(!expanded) } : {})}
       accessibilityRole={expandable ? 'button' : undefined}
     >
       <View style={styles.header}>
-        <Text style={styles.icon}>{insight.icon}</Text>
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: severityColor }]}>
             {insight.title}
@@ -95,18 +89,19 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   card: {
     borderRadius: 16,
     borderWidth: 1,
-    borderLeftWidth: 3,
     padding: 18,
     marginBottom: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Spacing.sm,
+    gap: 12,
   },
-  icon: {
-    fontSize: 20,
-    marginTop: 2,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 6,
   },
   textContainer: {
     flex: 1,

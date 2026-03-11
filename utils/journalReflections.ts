@@ -38,64 +38,30 @@ export function generateReflections(
 
   try {
     // ── MEDICATION REFLECTIONS ──
-    if (opts.medsTotal > 0) {
-      if (opts.medsDone === opts.medsTotal) {
-        const streak = (brief as any).adherenceStreak ?? 0;
-        if (streak >= 3) {
-          reflections.push({
-            id: 'med-streak',
-            icon: '💊',
-            observation: `All ${opts.medsTotal} medications taken — ${streak} days in a row.`,
-            recommendation: 'Consistency helps maintain steady medication levels throughout the day.',
-            category: 'medications',
-          });
-        } else {
-          reflections.push({
-            id: 'med-complete',
-            icon: '💊',
-            observation: `All ${opts.medsTotal} medications taken today.`,
-            category: 'medications',
-          });
-        }
-      } else if (opts.medsDone > 0) {
-        const remaining = opts.medsTotal - opts.medsDone;
+    // Only show med-streak (multi-day context); narrative covers daily counts
+    if (opts.medsTotal > 0 && opts.medsDone === opts.medsTotal) {
+      const streak = (brief as any).adherenceStreak ?? 0;
+      if (streak >= 3) {
         reflections.push({
-          id: 'med-partial',
+          id: 'med-streak',
           icon: '💊',
-          observation: `${opts.medsDone} of ${opts.medsTotal} medications taken. ${remaining} still pending.`,
-          recommendation: 'If a dose was missed, try to take it as soon as you remember — unless it\'s close to the next scheduled dose.',
-          category: 'medications',
-        });
-      } else {
-        reflections.push({
-          id: 'med-none',
-          icon: '💊',
-          observation: 'No medications logged yet today.',
-          recommendation: 'Head to the Today tab to confirm doses when ready.',
+          observation: `All ${opts.medsTotal} medications taken — ${streak} days in a row.`,
+          recommendation: 'Consistency helps maintain steady medication levels throughout the day.',
           category: 'medications',
         });
       }
     }
 
     // ── NUTRITION REFLECTIONS ──
-    if (opts.mealsTotal > 0) {
-      if (opts.mealsDone >= opts.mealsTotal) {
-        reflections.push({
-          id: 'meals-complete',
-          icon: '🍽️',
-          observation: 'All planned meals logged today.',
-          recommendation: 'Regular meals help stabilize energy and support medication effectiveness.',
-          category: 'nutrition',
-        });
-      } else if (opts.mealsDone > 0) {
-        const remaining = opts.mealsTotal - opts.mealsDone;
-        reflections.push({
-          id: 'meals-partial',
-          icon: '🍽️',
-          observation: `${opts.mealsDone} of ${opts.mealsTotal} meals logged. ${remaining} remaining.`,
-          category: 'nutrition',
-        });
-      }
+    // Only show meals-complete (positive reinforcement); narrative covers partial counts
+    if (opts.mealsTotal > 0 && opts.mealsDone >= opts.mealsTotal) {
+      reflections.push({
+        id: 'meals-complete',
+        icon: '🍽️',
+        observation: 'All planned meals logged today.',
+        recommendation: 'Regular meals help stabilize energy and support medication effectiveness.',
+        category: 'nutrition',
+      });
     }
 
     // ── HYDRATION REFLECTIONS ──
@@ -128,24 +94,15 @@ export function generateReflections(
     }
 
     // ── WELLNESS CHECK REFLECTIONS ──
-    if (opts.wellnessTotal > 0) {
-      if (opts.wellnessDone >= opts.wellnessTotal) {
-        reflections.push({
-          id: 'wellness-complete',
-          icon: '🌅',
-          observation: 'All wellness check-ins completed today.',
-          recommendation: 'These check-ins build a picture of daily patterns over time.',
-          category: 'wellness',
-        });
-      } else if (opts.hasMorning && !opts.hasEvening) {
-        reflections.push({
-          id: 'wellness-morning-done',
-          icon: '🌅',
-          observation: 'Morning check-in done. Evening check-in still open.',
-          recommendation: 'Evening check-ins capture how the day went — helpful for spotting patterns.',
-          category: 'wellness',
-        });
-      }
+    // Only show wellness-morning-done (specific next-step); narrative covers completion
+    if (opts.wellnessTotal > 0 && opts.hasMorning && !opts.hasEvening) {
+      reflections.push({
+        id: 'wellness-morning-done',
+        icon: '🌅',
+        observation: 'Morning check-in done. Evening check-in still open.',
+        recommendation: 'Evening check-ins capture how the day went — helpful for spotting patterns.',
+        category: 'wellness',
+      });
     }
 
     // ── VITALS REFLECTIONS ──
@@ -206,7 +163,7 @@ export function generateReflections(
 
 // ============================================================================
 // ENHANCED NARRATIVE
-// Replaces the basic "All 5 medications taken" with richer context
+// Reads like a caregiver briefing — a story of how the day is going
 // ============================================================================
 
 export function generateEnhancedNarrative(
@@ -223,60 +180,109 @@ export function generateEnhancedNarrative(
     patientName?: string;
   }
 ): string {
-  const parts: string[] = [];
-  const name = opts.patientName || 'Your patient';
+  const name = opts.patientName || 'They';
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
 
-  // Lead with what went well — vitals, completed meds
+  // Determine pronoun from patient name for natural flow
+  const pronoun = 'they';
+  const possessive = 'their';
+
+  // ── Build the positive lead ──
+  const positives: string[] = [];
+
+  if (opts.medsTotal > 0 && opts.medsDone === opts.medsTotal) {
+    positives.push(`took ${possessive} meds on time`);
+  } else if (opts.medsDone > 0) {
+    positives.push(`took ${opts.medsDone} of ${possessive} ${opts.medsTotal} meds`);
+  }
+
+  if (opts.mealsDone > 0) {
+    if (opts.mealsDone >= opts.mealsTotal) {
+      positives.push('ate all planned meals');
+    } else {
+      const mealLabels = ['breakfast', 'lunch', 'dinner'];
+      const label = opts.mealsDone <= mealLabels.length ? mealLabels.slice(0, opts.mealsDone).join(' and ') : `${opts.mealsDone} meals`;
+      positives.push(`had ${label}`);
+    }
+  }
+
   if (opts.hasVitals && brief.vitals?.readings) {
     const r = brief.vitals.readings;
-    const vitalsDetails: string[] = [];
-    if (r.systolic != null && r.diastolic != null) vitalsDetails.push(`blood pressure at ${r.systolic}/${r.diastolic}`);
-    if (r.heartRate != null) vitalsDetails.push(`heart rate ${r.heartRate}`);
-    if (r.temperature != null) vitalsDetails.push(`temp ${r.temperature}\u00B0F`);
-    if (vitalsDetails.length > 0) {
-      parts.push(`${name} had vitals checked \u2014 ${vitalsDetails.join(', ')}.`);
+    if (r.systolic != null && r.diastolic != null) {
+      positives.push(`had vitals checked (${r.systolic}/${r.diastolic})`);
     } else {
-      parts.push(`${name} had vitals recorded today.`);
+      positives.push('had vitals checked');
     }
   }
 
-  // Medication status
-  if (opts.medsTotal > 0) {
-    if (opts.medsDone === opts.medsTotal) {
-      parts.push(`All ${opts.medsTotal} medications have been taken.`);
-    } else if (opts.medsDone > 0) {
-      const pending = opts.medsTotal - opts.medsDone;
-      parts.push(`${opts.medsDone} of ${opts.medsTotal} medications confirmed \u2014 ${pending} still pending.`);
-    } else {
-      parts.push(`${opts.medsTotal} medications still need to be confirmed.`);
-    }
-  }
-
-  // Nutrition combined
-  const nutritionParts: string[] = [];
-  if (opts.mealsTotal > 0) {
-    if (opts.mealsDone >= opts.mealsTotal) {
-      nutritionParts.push(`${opts.mealsDone} meal${opts.mealsDone > 1 ? 's' : ''} logged`);
-    } else if (opts.mealsDone > 0) {
-      nutritionParts.push(`${opts.mealsDone} of ${opts.mealsTotal} meals logged`);
-    } else {
-      nutritionParts.push('no meals logged');
-    }
-  }
-  if (opts.waterGlasses > 0) {
-    nutritionParts.push(`${opts.waterGlasses} glass${opts.waterGlasses > 1 ? 'es' : ''} of water`);
-  } else if (opts.mealsTotal > 0 || opts.medsTotal > 0) {
-    nutritionParts.push('no water logged');
-  }
-  if (nutritionParts.length > 0) {
-    const combined = nutritionParts.join(' and ');
-    parts.push(combined.charAt(0).toUpperCase() + combined.slice(1) + '.');
-  }
-
-  // Wellness
   if (opts.wellnessDone > 0) {
-    parts.push(`${opts.wellnessDone} wellness check-in${opts.wellnessDone > 1 ? 's' : ''} completed.`);
+    positives.push(`completed ${possessive} ${opts.wellnessDone === 1 ? 'morning' : 'wellness'} check-in`);
   }
 
-  return parts.join(' ');
+  // ── Build the gaps ──
+  const gaps: string[] = [];
+
+  if (opts.medsTotal > 0 && opts.medsDone === 0) {
+    gaps.push('meds haven\'t been confirmed yet');
+  } else if (opts.medsTotal > 0 && opts.medsDone < opts.medsTotal) {
+    const pending = opts.medsTotal - opts.medsDone;
+    gaps.push(`${pending} med${pending > 1 ? 's' : ''} still pending`);
+  }
+
+  if (opts.mealsTotal > 0 && opts.mealsDone === 0) {
+    gaps.push('no meals logged');
+  } else if (opts.mealsTotal > 0 && opts.mealsDone < opts.mealsTotal) {
+    const mealGap = opts.mealsTotal - opts.mealsDone;
+    gaps.push(`${mealGap} meal${mealGap > 1 ? 's' : ''} not logged`);
+  }
+
+  if (!opts.hasVitals) {
+    gaps.push('vitals haven\'t been checked');
+  }
+
+  if (opts.waterGlasses === 0) {
+    gaps.push('no water logged');
+  } else if (opts.waterGlasses < 4) {
+    gaps.push('water intake is low');
+  }
+
+  if (!brief.sleep.logged && hour >= 17) {
+    gaps.push('sleep hasn\'t been logged');
+  }
+
+  // ── Compose the narrative ──
+  const sentences: string[] = [];
+
+  if (positives.length === 0 && gaps.length === 0) {
+    return `Nothing logged for ${name} yet today. No pressure \u2014 even one thing helps.`;
+  }
+
+  if (positives.length > 0) {
+    const lead = positives.length <= 2
+      ? positives.join(' and ')
+      : positives.slice(0, -1).join(', ') + ', and ' + positives[positives.length - 1];
+    sentences.push(`${name} had a ${positives.length >= 3 ? 'solid' : 'good'} ${timeOfDay} \u2014 ${pronoun} ${lead}.`);
+  } else {
+    sentences.push(`${name}'s day is just getting started.`);
+  }
+
+  if (gaps.length > 0) {
+    const gapText = gaps.length <= 2
+      ? gaps.join(' and ')
+      : gaps.slice(0, -1).join(', ') + ', and ' + gaps[gaps.length - 1];
+
+    if (positives.length > 0) {
+      sentences.push(`Still on the list: ${gapText}.`);
+    } else {
+      sentences.push(`So far, ${gapText}.`);
+    }
+  }
+
+  // What's ahead (only if before evening and there's pending work)
+  if (hour < 17 && gaps.length > 0) {
+    sentences.push('Evening meds and check-in are still ahead.');
+  }
+
+  return sentences.join(' ');
 }

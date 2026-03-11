@@ -100,13 +100,14 @@ describe('Enhanced Narrative', () => {
     expect(narrative).toContain('Dad');
   });
 
-  test('combines meals and water naturally', () => {
+  test('combines meals and gaps naturally', () => {
     const narrative = generateEnhancedNarrative(baseBrief, {
       ...baseOpts,
       mealsDone: 2, mealsTotal: 3, waterGlasses: 5,
     });
-    expect(narrative).toContain('2 of 3 meals logged');
-    expect(narrative).toContain('5 glasses of water');
+    // New narrative uses human-readable style, not "X of Y"
+    expect(narrative).toContain('breakfast and lunch');
+    expect(narrative).toContain('1 meal not logged');
   });
 
   test('notes pending medications', () => {
@@ -116,6 +117,6 @@ describe('Enhanced Narrative', () => {
       wellnessDone: 0, wellnessTotal: 2,
     });
     expect(narrative).toContain('still pending');
-    expect(narrative).toContain('medication');
+    expect(narrative).toContain('meds');
   });
 });

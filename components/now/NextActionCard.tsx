@@ -142,23 +142,23 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row' as const,
-    gap: 12,
-    paddingTop: 14,
+    gap: 10,
+    paddingTop: 10,
   },
   rowDouble: {},
   rowSingle: {},
   card: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 14,
-    gap: 8,
+    borderRadius: 16,
+    padding: 12,
+    gap: 4,
   },
   cardFullWidth: {},
   iconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center' as const,
   },
   iconEmoji: {
-    fontSize: 15,
+    fontSize: 13,
   },
   iconEmojiLarge: {
     fontSize: 22,
@@ -189,26 +189,26 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase' as const,
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   cardTitleLarge: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
   cardSub: {
-    fontSize: 12,
-    marginTop: 3,
-    lineHeight: 16,
+    fontSize: 11,
+    marginTop: 1,
+    lineHeight: 15,
   },
   cardAction: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500' as const,
   },
   confirmBtn: {
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingVertical: 8,
     alignItems: 'center' as const,
   },
   confirmBtnHoriz: {
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   confirmText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   fullWidthRow: {
@@ -231,14 +231,13 @@ const styles = StyleSheet.create({
   allDone: {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    gap: 6,
-    padding: 16,
+    gap: 4,
   },
   allDoneEmoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   allDoneText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
     textAlign: 'center' as const,
   },

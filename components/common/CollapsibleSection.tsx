@@ -45,9 +45,9 @@ const styles = (c: typeof Colors) => StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 2,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.5,
     color: c.textMuted,
   },
   badge: {
