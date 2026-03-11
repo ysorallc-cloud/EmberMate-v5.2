@@ -37,7 +37,7 @@ const BUCKET_TILE_MAP: Record<string, Omit<TileItem, 'bucket'>> = {
 };
 
 const BUCKET_RING_COLOR: Record<string, string> = {
-  meds:     '#60A5FA',  // accent blue
+  meds:     '#5B8A6A',  // accent green
   vitals:   '#67E8F9',  // cyan
   meals:    '#FBBF24',  // amber
   water:    '#38BDF8',  // sky

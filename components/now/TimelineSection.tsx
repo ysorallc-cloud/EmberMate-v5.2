@@ -64,7 +64,7 @@ const BUCKET_TO_ICON: Record<string, string> = {
 
 const ITEM_TYPE_TO_DOT_COLOR: Record<string, string> = {
   medication: '#F59E0B',
-  vitals: '#3B82F6',
+  vitals: '#67B8A7',
   nutrition: '#10B981',
   hydration: '#38BDF8',
   sleep: Colors.accent,

@@ -8,20 +8,35 @@ interface LegendItem {
   label: string;
 }
 
+interface DadOrbStats {
+  meds:   { done: number; total: number };
+  vitals: { done: number; total: number };
+  meals:  { done: number; total: number };
+  check:  { done: number; total: number };
+}
+
 interface DadOrbProps {
   patientName: string;
-  medsDone: number;
-  medsTotal: number;
-  careDone: number;
-  careTotal: number;
+  stats: DadOrbStats;
   lastCompleted?: { label: string; time: string } | null;
   legend?: LegendItem[];
 }
 
-export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, lastCompleted, legend }: DadOrbProps) {
+const RING_COLORS = {
+  meds:   { solid: '#5B8A6A', track: 'rgba(91,138,106,0.08)' },
+  vitals: { solid: '#67B8A7', track: 'rgba(103,184,167,0.08)' },
+  meals:  { solid: '#D4A853', track: 'rgba(212,168,83,0.08)' },
+  check:  { solid: '#EC4899', track: 'rgba(236,72,153,0.08)' },
+};
+
+const RING_RADII = [62, 52, 42, 32];
+const STROKE_WIDTH = 5.5;
+
+export function DadOrb({ patientName, stats, lastCompleted, legend }: DadOrbProps) {
   const { colors } = useTheme();
-  const overallDone = medsDone + careDone;
-  const overallTotal = medsTotal + careTotal;
+
+  const overallDone = stats.meds.done + stats.vitals.done + stats.meals.done + stats.check.done;
+  const overallTotal = stats.meds.total + stats.vitals.total + stats.meals.total + stats.check.total;
 
   const statusText = overallDone >= overallTotal && overallTotal > 0
     ? 'All taken care of'
@@ -33,37 +48,37 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
 
   const statusColor = overallDone >= overallTotal && overallTotal > 0 ? colors.accentGradientEnd : colors.textPrimary;
 
-  const outerRadius = 72;
-  const innerRadius = 58;
-  const strokeWidth = 7;
-  const outerCirc = 2 * Math.PI * outerRadius;
-  const innerCirc = 2 * Math.PI * innerRadius;
-  const medsPct = medsTotal > 0 ? Math.min(medsDone / medsTotal, 1) : 0;
-  const carePct = careTotal > 0 ? Math.min(careDone / careTotal, 1) : 0;
+  const rings = [
+    { key: 'meds',   r: RING_RADII[0], color: RING_COLORS.meds,   stat: stats.meds },
+    { key: 'vitals', r: RING_RADII[1], color: RING_COLORS.vitals, stat: stats.vitals },
+    { key: 'meals',  r: RING_RADII[2], color: RING_COLORS.meals,  stat: stats.meals },
+    { key: 'check',  r: RING_RADII[3], color: RING_COLORS.check,  stat: stats.check },
+  ];
 
   return (
     <View style={styles.container}>
       <View style={styles.orbWrapper}>
-        <Svg width={160} height={160} viewBox="0 0 160 160" style={styles.svg}>
+        <Svg width={140} height={140} viewBox="0 0 140 140" style={styles.svg}>
           {/* Track rings */}
-          <Circle cx={80} cy={80} r={outerRadius} fill="none" stroke="rgba(91,138,106,0.08)" strokeWidth={strokeWidth} />
-          <Circle cx={80} cy={80} r={innerRadius} fill="none" stroke="rgba(212,168,83,0.08)" strokeWidth={strokeWidth} />
-          {/* Meds ring (outer) */}
-          <Circle
-            cx={80} cy={80} r={outerRadius}
-            fill="none" stroke={colors.accent}
-            strokeWidth={strokeWidth} strokeLinecap="round"
-            strokeDasharray={`${outerCirc}`}
-            strokeDashoffset={outerCirc * (1 - medsPct)}
-          />
-          {/* Care ring (inner) */}
-          <Circle
-            cx={80} cy={80} r={innerRadius}
-            fill="none" stroke={colors.amber}
-            strokeWidth={strokeWidth} strokeLinecap="round"
-            strokeDasharray={`${innerCirc}`}
-            strokeDashoffset={innerCirc * (1 - carePct)}
-          />
+          {rings.map(({ key, r, color }) => (
+            <Circle key={`track-${key}`} cx={70} cy={70} r={r} fill="none" stroke={color.track} strokeWidth={STROKE_WIDTH} />
+          ))}
+          {/* Progress rings */}
+          {rings.map(({ key, r, color, stat }) => {
+            const circ = 2 * Math.PI * r;
+            const pct = stat.total > 0 ? Math.min(stat.done / stat.total, 1) : 0;
+            if (pct === 0) return null;
+            return (
+              <Circle
+                key={`prog-${key}`}
+                cx={70} cy={70} r={r}
+                fill="none" stroke={color.solid}
+                strokeWidth={STROKE_WIDTH} strokeLinecap="round"
+                strokeDasharray={`${circ}`}
+                strokeDashoffset={circ * (1 - pct)}
+              />
+            );
+          })}
         </Svg>
         {/* Avatar center */}
         <View style={[styles.avatar, {
@@ -85,7 +100,7 @@ export function DadOrb({ patientName, medsDone, medsTotal, careDone, careTotal, 
           {legend.map((item) => (
             <View key={item.label} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-              <Text style={[styles.legendLabel, { color: colors.textMuted }]}>{item.label}</Text>
+              <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>{item.label}</Text>
             </View>
           ))}
         </View>
@@ -101,8 +116,8 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   orbWrapper: {
-    width: 160,
-    height: 160,
+    width: 140,
+    height: 140,
     position: 'relative',
   },
   svg: {
@@ -110,22 +125,22 @@ const styles = StyleSheet.create({
   },
   avatar: {
     position: 'absolute',
-    top: 38,
-    left: 38,
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    top: 48,
+    left: 48,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   statusText: {
-    marginTop: 10,
+    marginTop: 14,
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.2,
@@ -134,8 +149,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 14,
-    marginTop: 10,
+    gap: 16,
+    marginTop: 12,
   },
   legendItem: {
     flexDirection: 'row',
@@ -143,11 +158,11 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   legendDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   legendLabel: {
-    fontSize: 10,
+    fontSize: 11,
   },
 });

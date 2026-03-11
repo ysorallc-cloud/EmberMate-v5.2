@@ -1155,7 +1155,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   // ─── DIVIDER ───
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: c.glassDim,
     marginHorizontal: -16,
   },
 

@@ -672,24 +672,13 @@ export default function NowScreen() {
     };
   }, [nextAppointment]);
 
-  // DadOrb computed values — non-med care totals
-  const { careDone, careTotal } = useMemo(() => {
-    let done = 0;
-    let total = 0;
-    const nonMedKeys: (keyof TodayStats)[] = ['vitals', 'meals', 'wellness', 'activity'];
-    for (const key of nonMedKeys) {
-      const stat = todayStats[key];
-      if (stat && stat.total > 0) {
-        done += stat.completed ?? 0;
-        total += stat.total ?? 0;
-      }
-    }
-    if (todayStats.custom && todayStats.custom.total > 0) {
-      done += todayStats.custom.completed ?? 0;
-      total += todayStats.custom.total ?? 0;
-    }
-    return { careDone: done, careTotal: total };
-  }, [todayStats]);
+  // DadOrb stats — individual category stats for 4-ring display
+  const orbStats = useMemo(() => ({
+    meds:   { done: todayStats.meds?.completed ?? 0,    total: todayStats.meds?.total ?? 0 },
+    vitals: { done: todayStats.vitals?.completed ?? 0,  total: todayStats.vitals?.total ?? 0 },
+    meals:  { done: todayStats.meals?.completed ?? 0,   total: todayStats.meals?.total ?? 0 },
+    check:  { done: todayStats.wellness?.completed ?? 0, total: todayStats.wellness?.total ?? 0 },
+  }), [todayStats]);
 
   // Last completed item for DadOrb
   const lastCompleted = useMemo(() => {
@@ -1117,15 +1106,13 @@ export default function NowScreen() {
           {/* ═══ DAD ORB ═══ */}
           <DadOrb
             patientName={patientName}
-            medsDone={todayStats.meds.completed}
-            medsTotal={todayStats.meds.total}
-            careDone={careDone}
-            careTotal={careTotal}
+            stats={orbStats}
             lastCompleted={lastCompleted}
             legend={orbLegend}
           />
 
           {/* ═══ SIDE-BY-SIDE: Appointment + Next ═══ */}
+          <View style={{ marginTop: 20 }} />
           <NextActionCard
             nextTask={nextTask}
             appointment={nextApptForCard}
@@ -1135,10 +1122,13 @@ export default function NowScreen() {
           />
 
           {/* ═══ TODAY'S SCHEDULE ═══ */}
+          <View style={{ marginTop: 24 }} />
           <SectionHeaderRow
             title="Today's Schedule"
             action="Care Plan"
             onAction={() => navigate('/care-plan')}
+            iconAction="+"
+            onIconAction={() => setShowQuickAdd(true)}
             collapsed={timelineCollapsed}
             onToggleCollapse={() => setTimelineCollapsed(prev => !prev)}
             styles={styles}
@@ -1250,6 +1240,7 @@ export default function NowScreen() {
           )}
 
           {/* ═══ WHAT'S HAPPENED ═══ */}
+          <View style={{ marginTop: 24 }} />
           {brief && (() => {
             const handoffNotes = buildHandoffNotes();
             if (handoffNotes.length === 0) return null;
@@ -1288,6 +1279,7 @@ export default function NowScreen() {
           })()}
 
           {/* ═══ BEFORE BED ═══ */}
+          <View style={{ marginTop: 24 }} />
           {brief && new Date().getHours() >= 17 && (() => {
             const bedItems = buildBeforeBedItems();
             if (bedItems.length === 0) return null;
@@ -1326,7 +1318,6 @@ export default function NowScreen() {
             completedCount={todayTimeline.completed.length}
             skippedCount={suppressedItems.length}
             onPause={coffeeMoment.startReset}
-            onQuickAdd={() => setShowQuickAdd(true)}
           />
 
         </View>
@@ -1372,7 +1363,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   // closureContainer and orientationContainer removed — prompts consolidated into MorningBriefing
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 0,
   },
 
@@ -1442,7 +1433,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     marginTop: 4,
   },
   greetingHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 4,
     paddingBottom: 12,
     flexDirection: 'row',
@@ -1514,11 +1505,11 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     fontSize: 18,
     fontWeight: '400' as const,
     color: c.accent,
-    width: 26,
-    height: 26,
-    lineHeight: 26,
+    width: 28,
+    height: 28,
+    lineHeight: 28,
     textAlign: 'center' as const,
-    borderRadius: 13,
+    borderRadius: 14,
     backgroundColor: c.accentLight,
     overflow: 'hidden' as const,
   },
@@ -1569,7 +1560,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 14,
   },
@@ -1610,7 +1601,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     fontSize: 14,
     color: c.textSecondary,
     textAlign: 'center',
-    marginVertical: 16,
+    marginTop: 28,
+    marginBottom: 8,
     paddingHorizontal: 20,
   },
   footerSection: {
@@ -1645,8 +1637,8 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
   },
   windowRowCurrent: {
     backgroundColor: 'rgba(20, 184, 166, 0.08)',

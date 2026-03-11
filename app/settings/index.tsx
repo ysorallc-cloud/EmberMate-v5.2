@@ -341,7 +341,7 @@ export default function SettingsScreen() {
           icon: '👤',
           title: 'Patient Information',
           subtitle: `${patientName || 'Patient'} \u2022 Medical history & allergies`,
-          color: 'rgba(52, 211, 153, 0.14)',
+          color: 'rgba(91, 138, 106, 0.14)',
           onPress: () => router.push('/patient'),
         },
         {
@@ -349,7 +349,7 @@ export default function SettingsScreen() {
           icon: '💊',
           title: 'Medications',
           subtitle: `${medicationCount} active`,
-          color: 'rgba(52, 211, 153, 0.14)',
+          color: 'rgba(91, 138, 106, 0.14)',
           onPress: () => router.push('/medications'),
         },
         {

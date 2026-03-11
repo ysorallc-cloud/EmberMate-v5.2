@@ -1081,9 +1081,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   waterBtnText: { fontSize: 20, color: c.textMuted, fontWeight: '300', lineHeight: 22 },
   waterBtnDisabled: { opacity: 0.3 },
   waterBtnAdd: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)' },
-  waterBtnAddText: { fontSize: 20, color: '#3B82F6', fontWeight: '300', lineHeight: 22 },
+  waterBtnAddText: { fontSize: 20, color: '#5B8A6A', fontWeight: '300', lineHeight: 22 },
   waterDisplay: { alignItems: 'center' },
-  waterCount: { fontSize: 36, fontWeight: '700', color: '#3B82F6' },
+  waterCount: { fontSize: 36, fontWeight: '700', color: '#5B8A6A' },
   waterGoal: { fontSize: 10, color: c.textMuted },
   glassRow: { flexDirection: 'row', justifyContent: 'center', gap: 4, marginTop: 10 },
   glass: {
@@ -1211,7 +1211,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
   qualityBtnActive: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)' },
   qualityBtnText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
-  qualityBtnTextActive: { color: '#3B82F6' },
+  qualityBtnTextActive: { color: '#5B8A6A' },
 
   // ── Symptom ──
   symptomSection: {},

@@ -259,9 +259,9 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     overflow: 'hidden',
   },
   moodEmojiSelected: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    borderColor: 'rgba(52, 211, 153, 0.35)',
-    shadowColor: '#34D399',
+    backgroundColor: 'rgba(91, 138, 106, 0.15)',
+    borderColor: 'rgba(91, 138, 106, 0.35)',
+    shadowColor: '#7BA67E',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 10,

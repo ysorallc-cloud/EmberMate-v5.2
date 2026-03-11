@@ -48,14 +48,14 @@ function SectionLabel({ title }: { title: string }) {
 
 // Bucket → color mapping for icon tiles
 const BUCKET_COLOR_MAP: Record<BucketType, string> = {
-  meds: '#60A5FA',
-  vitals: '#34D399',
+  meds: '#5B8A6A',
+  vitals: '#67B8A7',
   meals: '#FB923C',
   water: '#67E8F9',
   sleep: '#A78BFA',
   activity: '#FBBF24',
   wellness: '#F87171',
-  appointments: '#93C5FD',
+  appointments: '#A78BFA',
   custom: '#C4B5FD',
 };
 

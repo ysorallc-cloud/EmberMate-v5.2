@@ -7,10 +7,9 @@ interface CaregiverZoneProps {
   completedCount: number;
   skippedCount: number;
   onPause: () => void;
-  onQuickAdd?: () => void;
 }
 
-export function CaregiverZone({ completedCount, skippedCount, onPause, onQuickAdd }: CaregiverZoneProps) {
+export function CaregiverZone({ completedCount, skippedCount, onPause }: CaregiverZoneProps) {
   const { colors } = useTheme();
 
   return (
@@ -53,25 +52,6 @@ export function CaregiverZone({ completedCount, skippedCount, onPause, onQuickAd
           <Text style={[styles.cardAction, { color: colors.purple }]}>Log {'\u203A'}</Text>
         </TouchableOpacity>
 
-        {/* Quick Add */}
-        {onQuickAdd && (
-          <TouchableOpacity
-            style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
-            onPress={onQuickAdd}
-            activeOpacity={0.7}
-            accessibilityLabel="Quick add a log entry"
-            accessibilityRole="button"
-          >
-            <View style={[styles.iconBox, { backgroundColor: colors.accentLight, borderColor: colors.accentBorder }]}>
-              <Text style={[styles.iconEmoji, { fontSize: 18, fontWeight: '300' as const, color: colors.accent }]}>+</Text>
-            </View>
-            <View>
-              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Quick Add</Text>
-              <Text style={[styles.cardSub, { color: colors.textMuted }]}>Log event</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
         {/* Coffee Moment / Pause */}
         <TouchableOpacity
           style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
@@ -96,7 +76,7 @@ export function CaregiverZone({ completedCount, skippedCount, onPause, onQuickAd
 const styles = StyleSheet.create({
   container: {
     borderTopWidth: 1,
-    marginTop: 18,
+    marginTop: 24,
     paddingTop: 16,
   },
   sectionLabel: {
@@ -105,24 +85,24 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
     paddingLeft: 4,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   grid: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   card: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 18,
-    padding: 14,
-    paddingHorizontal: 12,
+    padding: 16,
+    paddingHorizontal: 14,
     gap: 8,
   },
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -135,7 +115,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cardSub: {
-    fontSize: 10,
+    fontSize: 11,
     marginTop: 2,
   },
   cardAction: {

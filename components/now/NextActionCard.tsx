@@ -140,23 +140,24 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row' as const,
-    gap: 10,
+    gap: 12,
     paddingTop: 14,
+    alignItems: 'flex-start' as const,
   },
   rowDouble: {},
   rowSingle: {},
   card: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 14,
-    gap: 10,
+    gap: 8,
   },
   cardFullWidth: {},
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -187,26 +188,26 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase' as const,
   },
   cardTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
-    lineHeight: 17,
+    lineHeight: 18,
   },
   cardTitleLarge: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
   cardSub: {
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 15,
+    fontSize: 12,
+    marginTop: 3,
+    lineHeight: 16,
   },
   cardAction: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500' as const,
   },
   confirmBtn: {
-    borderRadius: 10,
-    paddingVertical: 9,
+    borderRadius: 12,
+    paddingVertical: 10,
     alignItems: 'center' as const,
   },
   confirmBtnHoriz: {
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   confirmText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   fullWidthRow: {
@@ -232,9 +233,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     gap: 8,
     padding: 20,
+    minHeight: 120,
   },
   allDoneEmoji: {
-    fontSize: 24,
+    fontSize: 20,
   },
   allDoneText: {
     fontSize: 15,

@@ -330,7 +330,7 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     color: c.textPrimary,
   },
   inputFocused: {
-    borderColor: 'rgba(52, 211, 153, 0.35)',
+    borderColor: 'rgba(91, 138, 106, 0.35)',
   },
   bpRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bpInput: { flex: 1 },

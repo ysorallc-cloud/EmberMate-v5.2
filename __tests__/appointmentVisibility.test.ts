@@ -40,7 +40,7 @@ describe('nextApptDisplay logic', () => {
   test('appointment 6 days away should display with provider name', () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 6);
-    const dateStr = futureDate.toISOString().split('T')[0];
+    const dateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
 
     const result = computeNextApptDisplay({
       id: 'appt-1',
@@ -58,7 +58,7 @@ describe('nextApptDisplay logic', () => {
   test('appointment 20 days away should return null (beyond 14-day cutoff)', () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 20);
-    const dateStr = futureDate.toISOString().split('T')[0];
+    const dateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
 
     const result = computeNextApptDisplay({
       id: 'appt-2',
@@ -72,7 +72,8 @@ describe('nextApptDisplay logic', () => {
   });
 
   test('today appointment should show "Today" label', () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     const result = computeNextApptDisplay({
       id: 'appt-3',
@@ -93,7 +94,7 @@ describe('todayAppointments in schedule card', () => {
     const todayAppointments = [
       {
         id: 'appt-today-1',
-        date: new Date().toISOString().split('T')[0],
+        date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
         time: '15:00',
         provider: 'Dr. Park',
         specialty: 'Dermatology',

@@ -38,64 +38,64 @@ const AURORA_CONFIGS: Record<AuroraVariant, {
   },
   journal: {
     colors: [
-      'rgba(80, 60, 140, 0.45)',   // Purple
-      'rgba(40, 80, 120, 0.2)',    // Blue
+      'rgba(42, 70, 55, 0.40)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   hub: {
     colors: [
-      'rgba(60, 60, 140, 0.45)',   // Purple-blue
-      'rgba(40, 80, 100, 0.2)',    // Teal-blue
+      'rgba(42, 70, 55, 0.40)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   log: {
     colors: [
-      'rgba(100, 80, 30, 0.4)',    // Amber/orange
-      'rgba(40, 80, 60, 0.2)',     // Green-teal
+      'rgba(70, 80, 40, 0.35)',    // Olive green
+      'rgba(40, 65, 45, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   care: {
     colors: [
-      'rgba(100, 60, 100, 0.4)',   // Rose/purple
-      'rgba(60, 60, 100, 0.25)',   // Purple
+      'rgba(50, 80, 55, 0.35)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   reports: {
     colors: [
-      'rgba(80, 60, 140, 0.45)',   // Purple
-      'rgba(40, 80, 120, 0.2)',    // Blue
+      'rgba(42, 70, 55, 0.40)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   settings: {
     colors: [
-      'rgba(50, 60, 80, 0.3)',     // Blue-gray
-      'rgba(40, 50, 70, 0.15)',    // Darker blue-gray
+      'rgba(35, 55, 45, 0.25)',    // Muted forest
+      'rgba(30, 50, 40, 0.12)',    // Deep forest
       'transparent',
     ],
   },
   family: {
     colors: [
-      'rgba(100, 60, 100, 0.4)',   // Rose/purple (same as care)
-      'rgba(60, 60, 100, 0.25)',   // Purple
+      'rgba(50, 80, 55, 0.35)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   insights: {
     colors: [
-      'rgba(80, 60, 140, 0.45)',   // Purple (same as reports)
-      'rgba(40, 80, 120, 0.2)',    // Blue
+      'rgba(42, 70, 55, 0.40)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
   connect: {
     colors: [
-      'rgba(100, 60, 100, 0.4)',   // Rose/purple
-      'rgba(60, 60, 100, 0.25)',   // Purple
+      'rgba(50, 80, 55, 0.35)',    // Forest green
+      'rgba(35, 60, 50, 0.18)',    // Deep forest
       'transparent',
     ],
   },
@@ -105,17 +105,17 @@ const AURORA_CONFIGS: Record<AuroraVariant, {
 const LIGHT_AURORA_CONFIGS: Record<AuroraVariant, {
   colors: [string, string, string];
 }> = {
-  today: { colors: ['rgba(96, 165, 250, 0.06)', 'rgba(96, 165, 250, 0.02)', 'transparent'] },
-  now: { colors: ['rgba(96, 165, 250, 0.06)', 'rgba(96, 165, 250, 0.02)', 'transparent'] },
-  journal: { colors: ['rgba(124, 58, 237, 0.05)', 'rgba(37, 99, 235, 0.02)', 'transparent'] },
+  today: { colors: ['rgba(74, 107, 93, 0.06)', 'rgba(74, 107, 93, 0.02)', 'transparent'] },
+  now: { colors: ['rgba(74, 107, 93, 0.06)', 'rgba(74, 107, 93, 0.02)', 'transparent'] },
+  journal: { colors: ['rgba(74, 107, 93, 0.05)', 'rgba(74, 107, 93, 0.02)', 'transparent'] },
   hub: { colors: ['rgba(79, 70, 229, 0.05)', 'rgba(13, 148, 136, 0.02)', 'transparent'] },
   log: { colors: ['rgba(217, 119, 6, 0.05)', 'rgba(5, 150, 105, 0.02)', 'transparent'] },
-  care: { colors: ['rgba(124, 58, 237, 0.04)', 'rgba(79, 70, 229, 0.02)', 'transparent'] },
-  reports: { colors: ['rgba(124, 58, 237, 0.05)', 'rgba(37, 99, 235, 0.02)', 'transparent'] },
+  care: { colors: ['rgba(74, 107, 93, 0.04)', 'rgba(79, 70, 229, 0.02)', 'transparent'] },
+  reports: { colors: ['rgba(74, 107, 93, 0.05)', 'rgba(74, 107, 93, 0.02)', 'transparent'] },
   settings: { colors: ['rgba(107, 114, 128, 0.04)', 'rgba(75, 85, 99, 0.02)', 'transparent'] },
-  family: { colors: ['rgba(124, 58, 237, 0.04)', 'rgba(79, 70, 229, 0.02)', 'transparent'] },
-  insights: { colors: ['rgba(124, 58, 237, 0.05)', 'rgba(37, 99, 235, 0.02)', 'transparent'] },
-  connect: { colors: ['rgba(124, 58, 237, 0.04)', 'rgba(79, 70, 229, 0.02)', 'transparent'] },
+  family: { colors: ['rgba(74, 107, 93, 0.04)', 'rgba(79, 70, 229, 0.02)', 'transparent'] },
+  insights: { colors: ['rgba(74, 107, 93, 0.05)', 'rgba(74, 107, 93, 0.02)', 'transparent'] },
+  connect: { colors: ['rgba(74, 107, 93, 0.04)', 'rgba(79, 70, 229, 0.02)', 'transparent'] },
 };
 
 export const AuroraBackground: React.FC<Props> = ({ variant = 'today' }) => {
