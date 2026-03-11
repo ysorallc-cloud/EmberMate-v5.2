@@ -46,7 +46,7 @@ export function NextActionCard({ nextTask, appointment, currentTimeWindow, onCon
           </View>
           <View>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{appointment.provider}</Text>
-            <Text style={[styles.cardSub, { color: colors.textMuted }]}>{appointment.date} \u00B7 {appointment.time}</Text>
+            <Text style={[styles.cardSub, { color: colors.textMuted }]}>{appointment.date} · {appointment.time}</Text>
           </View>
           <Text style={[styles.cardAction, { color: colors.purple }]}>Prep visit {'\u203A'}</Text>
         </TouchableOpacity>
@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     gap: 12,
     paddingTop: 14,
-    alignItems: 'flex-start' as const,
   },
   rowDouble: {},
   rowSingle: {},
@@ -230,16 +229,15 @@ const styles = StyleSheet.create({
   allDone: {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    flexDirection: 'row' as const,
-    gap: 8,
-    padding: 20,
-    minHeight: 120,
+    gap: 6,
+    padding: 16,
   },
   allDoneEmoji: {
     fontSize: 20,
   },
   allDoneText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
+    textAlign: 'center' as const,
   },
 });

@@ -672,13 +672,20 @@ export default function NowScreen() {
     };
   }, [nextAppointment]);
 
-  // DadOrb stats — individual category stats for 4-ring display
-  const orbStats = useMemo(() => ({
-    meds:   { done: todayStats.meds?.completed ?? 0,    total: todayStats.meds?.total ?? 0 },
-    vitals: { done: todayStats.vitals?.completed ?? 0,  total: todayStats.vitals?.total ?? 0 },
-    meals:  { done: todayStats.meals?.completed ?? 0,   total: todayStats.meals?.total ?? 0 },
-    check:  { done: todayStats.wellness?.completed ?? 0, total: todayStats.wellness?.total ?? 0 },
-  }), [todayStats]);
+  // DadOrb computed values — non-med care totals
+  const { careDone, careTotal } = useMemo(() => {
+    let done = 0;
+    let total = 0;
+    const nonMedKeys: (keyof TodayStats)[] = ['vitals', 'meals', 'wellness'];
+    for (const key of nonMedKeys) {
+      const stat = todayStats[key];
+      if (stat && stat.total > 0) {
+        done += stat.completed ?? 0;
+        total += stat.total ?? 0;
+      }
+    }
+    return { careDone: done, careTotal: total };
+  }, [todayStats]);
 
   // Last completed item for DadOrb
   const lastCompleted = useMemo(() => {
@@ -1106,7 +1113,10 @@ export default function NowScreen() {
           {/* ═══ DAD ORB ═══ */}
           <DadOrb
             patientName={patientName}
-            stats={orbStats}
+            medsDone={todayStats.meds?.completed ?? 0}
+            medsTotal={todayStats.meds?.total ?? 0}
+            careDone={careDone}
+            careTotal={careTotal}
             lastCompleted={lastCompleted}
             legend={orbLegend}
           />
