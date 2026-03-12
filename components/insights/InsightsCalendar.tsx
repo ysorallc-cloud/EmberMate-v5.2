@@ -30,8 +30,8 @@ const segStyles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     gap: 1,
-    height: 3,
-    borderRadius: 1.5,
+    height: 4,
+    borderRadius: 2,
     overflow: 'hidden',
     position: 'absolute',
     bottom: 3,
@@ -179,23 +179,18 @@ export function InsightsCalendar({ timeRange, calendarDays }: InsightsCalendarPr
     );
   };
 
-  // ── Legend ──
+  // ── Legend (single row, category bars only) ──
+  const CAT_LABELS: Record<string, string> = {
+    meds: 'Meds', vitals: 'Vitals', meals: 'Meals', wellness: 'Well.', appt: 'Appt',
+  };
   const legend = (
     <View style={styles.legendContainer}>
-      <View style={styles.legendRow}>
-        <View style={[styles.legendSwatch, { backgroundColor: 'rgba(16,185,129,0.35)' }]} />
-        <Text style={[styles.legendLabel, { color: c.textMuted }]}>90%+</Text>
-        <View style={[styles.legendSwatch, { backgroundColor: 'rgba(16,185,129,0.18)' }]} />
-        <Text style={[styles.legendLabel, { color: c.textMuted }]}>70%+</Text>
-        <View style={[styles.legendSwatch, { backgroundColor: 'rgba(245,158,11,0.18)' }]} />
-        <Text style={[styles.legendLabel, { color: c.textMuted }]}>&lt;70%</Text>
-      </View>
       <View style={styles.legendRow}>
         {Object.entries(CAT_COLORS).map(([key, color]) => (
           <React.Fragment key={key}>
             <View style={[styles.legendBar, { backgroundColor: color }]} />
             <Text style={[styles.legendLabel, { color: c.textMuted }]}>
-              {key.charAt(0).toUpperCase() + key.slice(1)}
+              {CAT_LABELS[key] || key}
             </Text>
           </React.Fragment>
         ))}
@@ -263,8 +258,7 @@ const CELL_SIZE = 38;
 const styles = StyleSheet.create({
   // 7d layout
   weekContainer: {
-    marginHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 0,
   },
   weekRow: {
     flexDirection: 'row',
@@ -287,8 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 14,
-    marginHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 0,
   },
   gridHeader: {
     fontSize: 11,
@@ -340,11 +333,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-  },
-  legendSwatch: {
-    width: 12,
-    height: 12,
-    borderRadius: 3,
   },
   legendBar: {
     width: 10,

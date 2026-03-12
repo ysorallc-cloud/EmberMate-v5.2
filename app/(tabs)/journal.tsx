@@ -317,20 +317,8 @@ export default function JournalTab() {
     loadHistory();
   }, []);
 
-  const watchInsight = useMemo(() => {
-    if (!brief || !recentHistory) return null;
-    const stats: TodayStats = {
-      meds: { completed: medsDone, total: medsTotal },
-      vitals: { completed: hasVitals ? 1 : 0, total: 1 },
-      meals: { completed: mealsDone, total: mealsTotal },
-      wellness: { completed: wellnessDone, total: wellnessTotal },
-      activity: { completed: 0, total: 0 },
-    };
-    const insight = generateCareInsight(stats, [], medsDone + mealsDone + wellnessDone, recentHistory, []);
-    // Only show pattern/preventative insights (not time-sensitive ones meant for Today)
-    if (insight && (insight.type === 'pattern' || insight.type === 'preventative')) return insight;
-    return null;
-  }, [brief, recentHistory, medsDone, medsTotal, medsMissed, mealsDone, mealsTotal, mealsMissed, hasVitals, wellnessDone, wellnessTotal]);
+  // Pattern/preventative insights belong on Insights tab, not Journal
+  const watchInsight = null;
 
   // ============================================================================
   // EARLY RETURNS (after all hooks to satisfy Rules of Hooks)
@@ -520,8 +508,6 @@ export default function JournalTab() {
   // ============================================================================
   // PATIENT CONTEXT
   // ============================================================================
-  const allergies = medicalInfo?.allergies ?? [];
-  const showPatientCard = patientName.length > 0;
 
   // ============================================================================
   // RENDER — MAIN
@@ -545,38 +531,15 @@ export default function JournalTab() {
             subtitle={`${dayName}, ${dateStr}`}
             style={s.journalHeader}
             rightAction={
-              <View style={s.headerRightRow}>
-                {showPatientCard && (
-                  <TouchableOpacity
-                    onPress={() => navigate('/patient')}
-                    style={s.headerPatientChip}
-                    activeOpacity={0.7}
-                    accessibilityLabel={`Patient: ${patientName}. Tap to view profile.`}
-                    accessibilityRole="button"
-                  >
-                    <View style={s.headerPatientAvatar}>
-                      <Text style={s.headerPatientAvatarText}>
-                        {patientName.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={s.headerPatientName}>{patientName}</Text>
-                    {allergies.length > 0 && (
-                      <View style={s.headerAllergyBadge}>
-                        <Text style={s.headerAllergyBadgeText}>{'\u26A0'}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={s.headerShareBtn}
-                  onPress={() => setShowShareSheet(true)}
-                  activeOpacity={0.7}
-                  accessibilityLabel="Share daily summary"
-                  accessibilityRole="button"
-                >
-                  <Text style={s.headerShareBtnText}>Share</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={s.headerShareBtn}
+                onPress={() => setShowShareSheet(true)}
+                activeOpacity={0.7}
+                accessibilityLabel="Share daily summary"
+                accessibilityRole="button"
+              >
+                <Text style={s.headerShareBtnText}>Share</Text>
+              </TouchableOpacity>
             }
           />
 
@@ -609,25 +572,11 @@ export default function JournalTab() {
           )}
 
           {/* ═══ WHAT STANDS OUT — reflections + watch insights ═══ */}
-          {(reflections.length > 0 || watchInsight) && (
+          {reflections.length > 0 && (
             <>
               <View style={s.sectionHeader}>
                 <Text style={s.sectionTitle}>Keep an Eye On</Text>
               </View>
-
-              {/* Watch insight (pattern/trend) */}
-              {watchInsight && (
-                <View style={s.watchCard}>
-                  <View style={s.watchBorder} />
-                  <View style={s.watchContent}>
-                    <View style={s.reflectionHeader}>
-                      <Text style={s.reflectionIcon}>{watchInsight.icon}</Text>
-                      <Text style={s.watchTitle}>{watchInsight.title}</Text>
-                    </View>
-                    <Text style={s.watchMessage}>{watchInsight.message}</Text>
-                  </View>
-                </View>
-              )}
 
               {/* Reflections */}
               {(reflectionsExpanded ? reflections : reflections.slice(0, 2)).map((ref) => {
@@ -727,13 +676,6 @@ export default function JournalTab() {
                     {' \u00B7 '}
                     {daysUntilAppt === 0 ? 'Today' : daysUntilAppt === 1 ? 'Tomorrow' : `In ${daysUntilAppt} days`}
                   </Text>
-                  {watchInsight && (
-                    <Text style={s.appointmentAdvice}>
-                      {watchInsight.type === 'pattern'
-                        ? `Bring up: ${watchInsight.title.toLowerCase()}. ${watchInsight.message.split('.')[0]}.`
-                        : `Worth mentioning: ${watchInsight.message.split('.')[0]}.`}
-                    </Text>
-                  )}
                 </View>
               </View>
               <TouchableOpacity
@@ -909,53 +851,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   journalHeader: {
     marginBottom: 4,
     paddingHorizontal: 20,
-  },
-  headerRightRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
-  },
-  headerPatientChip: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    backgroundColor: c.glass,
-    borderWidth: 1,
-    borderColor: c.glassBorder,
-    borderRadius: 20,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-  headerPatientAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: c.accentDim,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  headerPatientAvatarText: {
-    fontSize: 10,
-    fontWeight: '600' as const,
-    color: c.accent,
-  },
-  headerPatientName: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: c.textSecondary,
-  },
-  headerAllergyBadge: {
-    backgroundColor: 'rgba(239,68,68,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.25)',
-    borderRadius: 3,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  headerAllergyBadgeText: {
-    fontSize: 9,
-    fontWeight: '600' as const,
-    color: '#EF4444',
   },
   headerShareBtn: {
     backgroundColor: c.accentDim,

@@ -20,7 +20,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { navigate } from '../../lib/navigate';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, BorderRadius } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -179,22 +178,8 @@ export default function UnderstandScreen() {
           <ScreenHeader
             title="Insights"
             subtitle={periodLabel}
-            purpose="Patterns and trends over time."
             rightAction={
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
-                <TouchableOpacity
-                  onPress={() => navigate('/settings')}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Settings"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <View style={styles.settingsGear}>
-                    <Text style={styles.settingsGearText}>{'\u2699\uFE0F'}</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+              <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
             }
           />
 
@@ -203,18 +188,16 @@ export default function UnderstandScreen() {
             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
           ) : insights ? (
             <View style={styles.insightSections}>
-              {/* Narrative Summary */}
-              {summaryText ? (
-                <View style={styles.insightSummaryCard}>
-                  <Text style={styles.insightSummaryText}>{summaryText}</Text>
-                </View>
-              ) : null}
-
-              {/* Calendar */}
-              <InsightsCalendar
-                timeRange={timeRange as 7 | 14 | 30}
-                calendarDays={calendarDays}
-              />
+              {/* Summary + Calendar combined card */}
+              <View style={styles.insightsSummaryCalendar}>
+                {summaryText ? (
+                  <Text style={styles.summaryText}>{summaryText}</Text>
+                ) : null}
+                <InsightsCalendar
+                  timeRange={timeRange as 7 | 14 | 30}
+                  calendarDays={calendarDays}
+                />
+              </View>
 
               <InsightSection category="watch" insights={insights.watch} />
               <InsightSection category="improving" insights={insights.improving} />
@@ -268,42 +251,28 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   },
 
   // Settings gear
-  settingsGear: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: c.glass,
-    borderWidth: 1,
-    borderColor: c.glassBorder,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  settingsGearText: {
-    fontSize: 18,
-  },
-
-  // Narrative summary card
-  insightSummaryCard: {
+  // Combined summary + calendar card
+  insightsSummaryCalendar: {
     backgroundColor: c.cardBackground,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(74,107,93,0.25)',
     borderLeftWidth: 3,
     borderLeftColor: c.accent,
-    padding: 14,
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    padding: 16,
+    marginBottom: 12,
   },
-  insightSummaryText: {
+  summaryText: {
     color: c.textPrimary,
     fontSize: 13,
     lineHeight: 20,
+    marginBottom: 14,
   },
 
   // Insight sections
   insightSections: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 8,
   },
 
   // Empty state

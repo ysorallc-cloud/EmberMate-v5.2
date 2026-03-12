@@ -60,6 +60,20 @@ export async function computePeriodSummary(daysBack: number): Promise<PeriodSumm
   };
 }
 
+/** Build a complete sentence from an insight, using body text if the title is a fragment. */
+function getSentence(insight: InsightText): string {
+  // If title is already a full sentence (>20 chars)
+  if (insight.title.length > 20) {
+    return insight.title.endsWith('.') ? insight.title : insight.title + '.';
+  }
+  // Combine fragment title with first sentence of body
+  if (insight.body) {
+    const firstSentence = insight.body.split('.')[0];
+    return `${insight.title} \u2014 ${firstSentence}.`;
+  }
+  return insight.title + '.';
+}
+
 export function generateSummaryText(
   insights: InsightResults,
   summary: PeriodSummary,
@@ -69,17 +83,17 @@ export function generateSummaryText(
 
   // Lead with the top improving item if any
   if (insights.improving.length > 0) {
-    parts.push(insights.improving[0].title + '.');
+    parts.push(getSentence(insights.improving[0]));
   }
 
   // Add the top watch item if any
   if (insights.watch.length > 0) {
-    parts.push(insights.watch[0].title + '.');
+    parts.push(getSentence(insights.watch[0]));
   }
 
   // Add top pattern if any
   if (insights.patterns.length > 0 && parts.length < 3) {
-    parts.push(insights.patterns[0].title + '.');
+    parts.push(getSentence(insights.patterns[0]));
   }
 
   // Add next appointment if within range

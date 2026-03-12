@@ -21,8 +21,8 @@ describe('Insights tab integration', () => {
     expect(content).toMatch(/useState.*TimeRange.*\(7\)/);
   });
 
-  it('has insightSummaryCard style', () => {
-    expect(content).toContain('insightSummaryCard');
+  it('has insightsSummaryCalendar combined card style', () => {
+    expect(content).toContain('insightsSummaryCalendar');
   });
 
   it('summaryRow style does NOT exist (old 3-stat layout removed)', () => {

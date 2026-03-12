@@ -109,45 +109,15 @@ describe('ScreenHeader rightAction layout (web tappability)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 2. Gear button must meet minimum 44×44 tap target on web
+// 2. Settings gear removed from Insights (accessible via Settings screen)
 // ---------------------------------------------------------------------------
-describe('Settings gear button tap target', () => {
-  test('gear button should be at least 44x44 for web accessibility', () => {
+describe('Settings gear removed from Insights', () => {
+  test('no settingsGear style in understand.tsx', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
       require.resolve('../app/(tabs)/understand'),
       'utf8'
     );
-
-    // Extract settingsGear width and height from the styles
-    const widthMatch = src.match(/settingsGear[\s\S]*?width:\s*(\d+)/);
-    const heightMatch = src.match(/settingsGear[\s\S]*?height:\s*(\d+)/);
-
-    expect(widthMatch).not.toBeNull();
-    expect(heightMatch).not.toBeNull();
-
-    const width = parseInt(widthMatch![1], 10);
-    const height = parseInt(heightMatch![1], 10);
-
-    // Visual size 40+, with hitSlop providing 44+ effective tap target
-    expect(width).toBeGreaterThanOrEqual(40);
-    expect(height).toBeGreaterThanOrEqual(40);
-  });
-
-  test('gear TouchableOpacity should have a minimum hit area via hitSlop', () => {
-    const fs = require('fs');
-    const src = fs.readFileSync(
-      require.resolve('../app/(tabs)/understand'),
-      'utf8'
-    );
-
-    // The gear uses hitSlop to extend the tap target beyond visual bounds
-    const hasHitSlop = src.includes('hitSlop');
-    const gearMatch = src.match(/settingsGear[\s\S]*?width:\s*(\d+)/);
-    const gearWidth = gearMatch ? parseInt(gearMatch[1], 10) : 0;
-
-    // Either the gear is 44+ or hitSlop extends the tap area
-    const meetsMinTap = gearWidth >= 44 || hasHitSlop;
-    expect(meetsMinTap).toBe(true);
+    expect(src).not.toContain('settingsGear');
   });
 });
