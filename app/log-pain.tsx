@@ -28,6 +28,8 @@ import { EVENT } from '../lib/eventNames';
 import { getTodayDateString } from '../services/carePlanGenerator';
 import { logInstanceCompletion, DEFAULT_PATIENT_ID } from '../storage/carePlanRepo';
 import { SubScreenHeader } from '../components/SubScreenHeader';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const BODY_LOCATIONS = [
   'Head', 'Neck', 'Chest', 'Abdomen', 'Back',
@@ -63,6 +65,8 @@ export default function LogPainScreen() {
   const [character, setCharacter] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -99,7 +103,10 @@ export default function LogPainScreen() {
       }
 
       await hapticSuccess();
-      navigateBack();
+      const parts = [`${severity}/10 ${getSeverityLabel(severity)}`];
+      if (bodyLocation) parts.push(bodyLocation);
+      setSavedPreview(parts.join(' — '));
+      setShowConfirmation(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to log pain. Please try again.');
       logError('LogPainScreen.handleSave', error);
@@ -256,6 +263,14 @@ export default function LogPainScreen() {
         </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="🩹"
+        title="Pain Logged"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.pain}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

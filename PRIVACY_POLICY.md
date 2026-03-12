@@ -1,7 +1,7 @@
 # Privacy Policy for EmberMate
 
-**Last Updated**: January 3, 2025
-**Effective Date**: January 3, 2025
+**Last Updated**: March 11, 2026
+**Effective Date**: March 11, 2026
 
 ---
 
@@ -38,17 +38,19 @@ When you use EmberMate, you may voluntarily provide the following information:
 **We DO NOT collect:**
 - Analytics data
 - Usage statistics
-- Crash reports with personal information
 - Location data
 - Contact lists
 - Camera/photo access (except when explicitly granted)
 - Microphone access
-- Any data transmitted to external servers
 
 **We DO collect locally (on your device only):**
 - App usage logs (for security audit trail)
 - Last activity timestamp (for auto-lock)
 - Local preferences and settings
+
+**We DO collect via Sentry (error reporting):**
+- We collect anonymized crash reports via Sentry (no personal health information is included)
+- See Third-Party Services section for details
 
 ---
 
@@ -196,6 +198,13 @@ We do not knowingly collect data from children under 13. If we become aware of s
 - Keychain/Keystore for encryption keys
 - Local notifications
 - Biometric authentication
+
+**Sentry (Error Reporting):**
+- Collects crash reports and non-fatal error data in production builds
+- Data sent: stack traces, device type, OS version, app version
+- Data NOT sent: medications, vitals, symptoms, patient names, or any health data
+- All health-related information is scrubbed before transmission
+- Sentry's privacy policy: https://sentry.io/privacy/
 
 **No External Analytics:**
 - We do NOT use Google Analytics
@@ -440,6 +449,7 @@ By using EmberMate, you acknowledge that:
 
 ## Version History
 
+**v1.1 - March 11, 2026**: Added Sentry error reporting disclosure
 **v1.0 - January 3, 2025**: Initial privacy policy
 
 ---

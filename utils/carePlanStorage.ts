@@ -33,7 +33,7 @@ export async function getCarePlan(): Promise<CarePlan | null> {
       return parsed;
     }
 
-    console.warn('Invalid care plan data, returning null');
+    devLog('Invalid care plan data, returning null');
     return null;
   } catch (error) {
     logError('carePlanStorage.getCarePlan', error);

@@ -31,6 +31,8 @@ import { logError } from '../utils/devLog';
 import { useDailyCareInstances } from '../hooks/useDailyCareInstances';
 import { emitDataUpdate } from '../lib/events';
 import { EVENT } from '../lib/eventNames';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 // ============================================================================
 // CONSTANTS
@@ -90,6 +92,8 @@ export default function LogMedicationPlanItemScreen() {
   const [medicationData, setMedicationData] = useState<MedicationDisplayData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const [mode, setMode] = useState<'confirm' | 'skip'>('confirm');
   const [skipReason, setSkipReason] = useState<string | null>(null);
   const [sideEffects, setSideEffects] = useState<string[]>([]);
@@ -158,7 +162,8 @@ export default function LogMedicationPlanItemScreen() {
       }
 
       await hapticSuccess();
-      navigateBack();
+      setSavedPreview(medicationData.name);
+      setShowConfirmation(true);
     } catch (error) {
       logError('LogMedicationPlanItemScreen.handleMarkTaken', error);
       Alert.alert('Error', 'Failed to log medication');
@@ -182,7 +187,8 @@ export default function LogMedicationPlanItemScreen() {
       }
 
       await hapticLight();
-      navigateBack();
+      setSavedPreview('Skipped');
+      setShowConfirmation(true);
     } catch (error) {
       logError('LogMedicationPlanItemScreen.handleSkip', error);
       Alert.alert('Error', 'Failed to skip medication');
@@ -491,6 +497,14 @@ export default function LogMedicationPlanItemScreen() {
           )}
         </View>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="💊"
+        title="Medication Logged"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.medication}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

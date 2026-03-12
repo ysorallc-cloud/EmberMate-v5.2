@@ -8,25 +8,9 @@ import { CalendarDay } from '@/types/calendar';
 import { Colors } from '@/theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { isSameDay } from 'date-fns';
+import { getHeatColor, getHeatBorder } from '../../utils/calendarColors';
 
 const DAYS_OF_WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-function getHeatColor(pct: number | undefined): string {
-  if (pct === undefined || pct < 0) return 'transparent';
-  if (pct >= 90) return 'rgba(16,185,129,0.35)';
-  if (pct >= 70) return 'rgba(16,185,129,0.18)';
-  if (pct >= 50) return 'rgba(245,158,11,0.18)';
-  if (pct >= 25) return 'rgba(245,158,11,0.1)';
-  return 'rgba(239,68,68,0.1)';
-}
-
-function getHeatBorder(pct: number | undefined, colors: typeof Colors): string {
-  if (pct === undefined || pct < 0) return colors.border;
-  if (pct >= 90) return 'rgba(16,185,129,0.4)';
-  if (pct >= 70) return 'rgba(16,185,129,0.25)';
-  if (pct >= 50) return 'rgba(245,158,11,0.25)';
-  return colors.border;
-}
 
 function getDotColor(pct: number | undefined, colors: typeof Colors): string {
   if (pct === undefined) return colors.textMuted;
@@ -80,7 +64,7 @@ export const CalendarGrid: React.FC<Props> = ({ days, selectedDate, onDayPress }
                     ? colors.accent
                     : isToday
                       ? colors.accent
-                      : getHeatBorder(pct, colors),
+                      : getHeatBorder(pct, colors.border),
                   opacity: isFuture ? 0.35 : !day.isCurrentMonth ? 0.25 : 1,
                 },
               ]}

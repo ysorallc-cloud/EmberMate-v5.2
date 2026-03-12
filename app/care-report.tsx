@@ -54,7 +54,7 @@ import { logAuditEvent, AuditEventType, AuditSeverity } from '../utils/auditLog'
 // TYPES
 // ============================================================================
 
-type ReportScope = 'handoff' | 'today' | 'visit' | 'full';
+type ReportScope = 'handoff' | 'full';
 
 interface ScopeOption {
   id: ReportScope;
@@ -63,10 +63,8 @@ interface ScopeOption {
 }
 
 const SCOPE_OPTIONS: ScopeOption[] = [
-  { id: 'handoff', label: 'Handoff', icon: '\uD83D\uDD04' },
-  { id: 'today', label: 'Today', icon: '\uD83D\uDCCB' },
-  { id: 'visit', label: 'Visit Prep', icon: '\uD83E\uDE7A' },
-  { id: 'full', label: 'Full Report', icon: '\uD83D\uDCCA' },
+  { id: 'handoff', label: 'Summary', icon: '📋' },
+  { id: 'full', label: 'Full Report', icon: '📊' },
 ];
 
 // ============================================================================
@@ -215,10 +213,6 @@ export default function CareReportScreen() {
           generatedAt: report.generatedAt,
         };
         await generateAndSharePDF(reportData, { name: patientName });
-      } else if (scope === 'today') {
-        await exportTodayReport();
-      } else if (scope === 'visit') {
-        await exportVisitPrepReport();
       } else {
         await exportFullReport();
       }
@@ -440,33 +434,8 @@ export default function CareReportScreen() {
             emergencyContacts={emergencyContacts}
             careBrief={careBrief}
             watchForItems={watchForItems}
-          />}
-
-          {scope === 'today' && <TodayView
-            patientName={patientName}
-            caregiverName={caregiverName}
-            medications={activeMeds}
             vitalsLog={vitalsLog}
             mealsLog={mealsLog}
-            notesLog={notesLog}
-            appointments={appointments}
-            careActivities={careActivities}
-            careBrief={careBrief}
-          />}
-
-          {scope === 'visit' && <VisitPrepView
-            providerPrep={providerPrep}
-            medications={activeMeds}
-            careBrief={careBrief}
-            checkedQuestions={checkedQuestions}
-            onToggleQuestion={(id) => {
-              setCheckedQuestions(prev => {
-                const next = new Set(prev);
-                if (next.has(id)) next.delete(id);
-                else next.add(id);
-                return next;
-              });
-            }}
           />}
 
           {scope === 'full' && <FullReportView
@@ -488,7 +457,7 @@ export default function CareReportScreen() {
 
 function HandoffView({
   patientName, medications, takenCount, missedMeds, totalScheduledMeds, appointments, upcomingAppts,
-  medicalInfo, emergencyContacts, careBrief, watchForItems,
+  medicalInfo, emergencyContacts, careBrief, watchForItems, vitalsLog, mealsLog,
 }: {
   patientName: string;
   medications: Medication[];
@@ -501,9 +470,12 @@ function HandoffView({
   emergencyContacts: CareTeamMember[];
   careBrief: CareBrief | null;
   watchForItems: InsightData[];
+  vitalsLog: any;
+  mealsLog: any;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const briefMeds = careBrief?.medications ?? [];
   const totalMeds = totalScheduledMeds || medications.length;
   const statusLevel = missedMeds.length === 0 ? 'stable'
     : missedMeds.length >= totalMeds * 0.5 ? 'concerning'
@@ -546,11 +518,69 @@ function HandoffView({
         </View>
       </GlassCard>
 
+      {/* Today at a Glance */}
+      <GlassCard style={styles.sectionCard}>
+        <Text style={styles.sectionLabel}>TODAY AT A GLANCE</Text>
+        <Text style={styles.patientMeta}>{patientName} | {format(new Date(), 'MMMM d, yyyy')}</Text>
+        <View style={styles.summaryGrid}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{takenCount}/{totalMeds}</Text>
+            <Text style={styles.summaryItemLabel}>Meds Taken</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{vitalsLog ? 'Yes' : 'No'}</Text>
+            <Text style={styles.summaryItemLabel}>Vitals</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{mealsLog?.meals?.length || 0}</Text>
+            <Text style={styles.summaryItemLabel}>Meals</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{upcomingAppts.filter(a => {
+              const d = Math.ceil((new Date(a.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+              return d === 0;
+            }).length}</Text>
+            <Text style={styles.summaryItemLabel}>Appts</Text>
+          </View>
+        </View>
+      </GlassCard>
+
       {/* Clinical Summary */}
       <GlassCard style={styles.sectionCard}>
         <Text style={styles.sectionLabel}>CLINICAL SUMMARY</Text>
         <Text style={styles.sectionBody}>{clinicalSummary}</Text>
       </GlassCard>
+
+      {/* Medication Detail */}
+      {medications.length > 0 && (
+        <GlassCard style={styles.sectionCard}>
+          <Text style={styles.sectionLabel}>MEDICATIONS</Text>
+          {medications.map((med, i) => {
+            const briefMed = briefMeds.find(b => b.name.toLowerCase() === med.name.toLowerCase());
+            const isTaken = briefMed
+              ? (briefMed.status === 'completed' || briefMed.status === 'skipped')
+              : med.taken;
+            const statusLabel = briefMed
+              ? (briefMed.status === 'completed' ? 'Taken' : briefMed.status === 'skipped' ? 'Skipped' : briefMed.status === 'missed' ? 'Missed' : 'Pending')
+              : (med.taken ? 'Taken' : 'Pending');
+
+            return (
+              <View key={med.id || i} style={styles.listItem}>
+                <View style={styles.listItemRow}>
+                  <Text style={styles.listItemName}>{med.name}</Text>
+                  <Text style={[
+                    styles.listItemStatus,
+                    isTaken ? styles.statusTaken : styles.statusPending,
+                  ]}>
+                    {statusLabel}
+                  </Text>
+                </View>
+                <Text style={styles.listItemDetail}>{med.dosage || 'As directed'}</Text>
+              </View>
+            );
+          })}
+        </GlassCard>
+      )}
 
       {/* Needs Attention */}
       {(missedMeds.length > 0 || upcomingAppts.some(a => {

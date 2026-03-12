@@ -89,7 +89,7 @@ export const PrivacyDisclaimerScreen: React.FC<Props> = ({ onDisclaimerAccepted 
               I understand and accept the{' '}
               <Text
                 style={styles.link}
-                onPress={() => Linking.openURL('https://ysorallc.org/terms')}
+                onPress={() => Linking.openURL('https://www.ysorallc.org/terms')}
               >
                 terms of use
               </Text>

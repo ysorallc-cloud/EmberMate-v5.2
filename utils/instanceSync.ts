@@ -12,6 +12,7 @@ import {
   DEFAULT_PATIENT_ID,
 } from '../storage/carePlanRepo';
 import type { LogEntryData, CarePlanItemType } from '../types/carePlan';
+import { logWarning } from './devLog';
 
 /**
  * Find a matching pending DailyCareInstance and mark it completed.
@@ -79,7 +80,7 @@ export async function syncLogToInstance(
     return result !== null;
   } catch (error) {
     // Don't block the save flow — log and continue
-    console.warn('[instanceSync] Failed to sync log to instance:', error);
+    logWarning('instanceSync', String(error));
     return false;
   }
 }

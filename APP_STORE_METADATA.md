@@ -1,7 +1,7 @@
 # App Store Metadata for EmberMate
 
-**Version**: 5.7.0
-**Last Updated**: January 3, 2025
+**Version**: 5.8.0
+**Last Updated**: March 11, 2026
 
 This document contains all metadata, descriptions, and assets needed for App Store (iOS) and Google Play Store (Android) submissions.
 
@@ -301,22 +301,24 @@ Zero advertisements, zero analytics, zero tracking. Your health information is p
 
 ### What's New in This Version (500 characters)
 
-**Version 5.7.0 - Major Security & Features Update**
+**Version 5.8.0 - App Store Launch**
 
 ✨ NEW FEATURES:
+• All features included free at launch
 • Biometric authentication (Face ID/Touch ID/Fingerprint)
 • PIN code security
 • Encrypted data backups
 • Security audit logging
-• Family care coordination
+• Family care coordination for up to 10 patients
 • Vitals & symptom tracking
-• Correlation reports
-• Enhanced care summaries
+• Correlation reports & health insights
+• Enhanced care summaries with PDF export
 
 🔒 SECURITY:
-• AES-256 encryption
-• Auto-lock
+• AES-256 encryption for all health data
+• Auto-lock after inactivity
 • Security event logging
+• Sentry error reporting (anonymized, no health data)
 
 🐛 BUG FIXES:
 • Improved medication reminders
@@ -677,28 +679,31 @@ See separate FAQ.md document
 
 ## Version History
 
-### v5.7.0 (Current)
-- Initial App Store/Play Store release
+### v5.8.0 (Current)
+- App Store/Play Store launch release
+- All features included free during launch period
+- Comprehensive security features (AES-256, biometric auth)
+- Family care coordination for up to 10 patients
+- Complete health tracking suite
+- Sentry error reporting (anonymized)
+
+### v5.7.0
+- Initial internal release
 - Comprehensive security features
 - Family care coordination
 - Complete health tracking suite
 
 ### Planned Updates
 
-**v5.8.0** (Q1 2025)
+**v6.0.0**
 - Apple Health / Google Fit integration
 - Medication interaction database
 - Voice notes for symptoms
 - Improved accessibility
-
-**v6.0.0** (Q2 2025)
 - Optional cloud backup (encrypted)
-- Telemedicine integration
-- Prescription scanning (OCR)
-- Smart health insights
 
 ---
 
-**Last Updated**: January 3, 2025
+**Last Updated**: March 11, 2026
 **Document Owner**: EmberMate Team
 **Next Review**: Before each version release

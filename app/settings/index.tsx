@@ -478,7 +478,7 @@ export default function SettingsScreen() {
           title: 'Privacy Policy',
           subtitle: 'How we handle your data',
           color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => Linking.openURL('https://ysorallc.org/privacy'),
+          onPress: () => Linking.openURL('https://www.ysorallc.org/privacy'),
         },
         {
           id: 'terms-of-service',
@@ -486,7 +486,19 @@ export default function SettingsScreen() {
           title: 'Terms of Service',
           subtitle: 'Usage terms and conditions',
           color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => Linking.openURL('https://ysorallc.org/terms'),
+          onPress: () => Linking.openURL('https://www.ysorallc.org/terms'),
+        },
+        {
+          id: 'medical-disclaimer',
+          icon: '⚕️',
+          title: 'Medical Disclaimer',
+          subtitle: 'Not a medical device',
+          color: 'rgba(255, 255, 255, 0.07)',
+          onPress: () => Alert.alert(
+            'Medical Disclaimer',
+            'EmberMate is a personal health tracking and care coordination tool. It is not a medical device and does not provide medical advice, diagnosis, or treatment. Always consult qualified healthcare professionals for medical decisions.',
+            [{ text: 'OK' }]
+          ),
         },
         {
           id: 'version',

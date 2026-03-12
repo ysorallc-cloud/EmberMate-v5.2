@@ -29,9 +29,12 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { TimeRange } from '../../utils/understandInsights';
 import { logError } from '../../utils/devLog';
 import { useDataListener } from '../../lib/events';
-import { generateAllInsights, InsightResults, computePeriodSummary, PeriodSummary } from '../../utils/insightTextGenerator';
+import { generateAllInsights, InsightResults, computePeriodSummary, PeriodSummary, generateSummaryText } from '../../utils/insightTextGenerator';
 import { InsightSection } from '../../components/insights/InsightSection';
+import { InsightsCalendar } from '../../components/insights/InsightsCalendar';
 import { getOrCreateCarePlanConfig } from '../../storage/carePlanConfigRepo';
+import { useCalendarData } from '../../hooks/useCalendarData';
+import { getUpcomingAppointments } from '../../utils/appointmentStorage';
 
 // ============================================================================
 // TIME RANGE TOGGLE
@@ -100,9 +103,11 @@ export default function UnderstandScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<TimeRange>(14);
+  const [timeRange, setTimeRange] = useState<TimeRange>(7);
   const [insights, setInsights] = useState<InsightResults | null>(null);
   const [summary, setSummary] = useState<PeriodSummary | null>(null);
+  const [summaryText, setSummaryText] = useState('');
+  const { calendarDays } = useCalendarData(new Date(), new Date());
 
   const loadInsights = useCallback(async () => {
     try {
@@ -114,6 +119,23 @@ export default function UnderstandScreen() {
       ]);
       setInsights(results);
       setSummary(periodSummary);
+
+      // Generate narrative summary text
+      const appointments = await getUpcomingAppointments();
+      const rangeEnd = new Date();
+      const rangeStart = new Date();
+      rangeStart.setDate(rangeStart.getDate() - timeRange);
+      const upcomingFormatted = appointments
+        .filter((a: { date: string }) => {
+          const d = new Date(a.date);
+          return d >= rangeStart && d <= rangeEnd;
+        })
+        .map((a: { provider?: string; date: string }) => ({
+          provider: a.provider || 'Appointment',
+          date: a.date,
+        }));
+      const text = generateSummaryText(results, periodSummary, upcomingFormatted);
+      setSummaryText(text);
     } catch (err) {
       logError('Insights.loadInsights', err);
     } finally {
@@ -181,25 +203,19 @@ export default function UnderstandScreen() {
             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
           ) : insights ? (
             <View style={styles.insightSections}>
-              {/* Period Summary */}
-              {summary && summary.totalInstances > 0 && (
-                <View style={styles.summaryCard}>
-                  <View style={styles.summaryRow}>
-                    <View style={styles.summaryStat}>
-                      <Text style={styles.summaryValue}>{summary.completionRate}%</Text>
-                      <Text style={styles.summaryLabel}>Completed</Text>
-                    </View>
-                    <View style={styles.summaryStat}>
-                      <Text style={styles.summaryValue}>{summary.activeDays}/{summary.totalDays}</Text>
-                      <Text style={styles.summaryLabel}>Active days</Text>
-                    </View>
-                    <View style={styles.summaryStat}>
-                      <Text style={styles.summaryValue}>{summary.totalInstances}</Text>
-                      <Text style={styles.summaryLabel}>Tasks logged</Text>
-                    </View>
-                  </View>
+              {/* Narrative Summary */}
+              {summaryText ? (
+                <View style={styles.insightSummaryCard}>
+                  <Text style={styles.insightSummaryText}>{summaryText}</Text>
                 </View>
-              )}
+              ) : null}
+
+              {/* Calendar */}
+              <InsightsCalendar
+                timeRange={timeRange as 7 | 14 | 30}
+                calendarDays={calendarDays}
+              />
+
               <InsightSection category="watch" insights={insights.watch} />
               <InsightSection category="improving" insights={insights.improving} />
               <InsightSection category="pattern" insights={insights.patterns} />
@@ -266,33 +282,22 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     fontSize: 18,
   },
 
-  // Period summary
-  summaryCard: {
+  // Narrative summary card
+  insightSummaryCard: {
     backgroundColor: c.cardBackground,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: c.glassBorder,
-    padding: 20,
-    marginBottom: 24,
+    borderColor: 'rgba(74,107,93,0.25)',
+    borderLeftWidth: 3,
+    borderLeftColor: c.accent,
+    padding: 14,
+    paddingHorizontal: 16,
+    marginBottom: 14,
   },
-  summaryRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-around' as const,
-  },
-  summaryStat: {
-    alignItems: 'center' as const,
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: '600' as const,
+  insightSummaryText: {
     color: c.textPrimary,
-    letterSpacing: -0.5,
-  },
-  summaryLabel: {
-    fontSize: 11,
-    color: c.textMuted,
-    marginTop: 6,
-    letterSpacing: 0.5,
+    fontSize: 13,
+    lineHeight: 20,
   },
 
   // Insight sections

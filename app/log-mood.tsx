@@ -26,6 +26,8 @@ import { logError } from '../utils/devLog';
 import { emitDataUpdate } from '../lib/events';
 import { EVENT } from '../lib/eventNames';
 import { emitMoodEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const MOODS = [
   { id: 'great', emoji: '😊', label: 'Great' },
@@ -45,7 +47,8 @@ export default function LogMoodScreen() {
   const isFromCarePlan = carePlanContext !== null;
 
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeout on unmount to prevent memory leaks
@@ -103,15 +106,11 @@ export default function LogMoodScreen() {
       emitDataUpdate(EVENT.MOOD);
       try { await emitMoodEvent(moodValue, moodId); } catch {}
 
-      // Show confirmation before navigating back
-      setShowConfirmation(true);
-
-      navigationTimeoutRef.current = setTimeout(() => {
-        navigateBack();
-      }, 800);
+      const moodLabel = MOODS.find(m => m.id === moodId)?.label || moodId;
+      setSavedPreview(moodLabel);
+      setShowSaveConfirmation(true);
     } catch (error) {
       logError('LogMoodScreen.handleMoodSelect', error);
-      navigateBack();
     }
   };
 
@@ -146,11 +145,11 @@ export default function LogMoodScreen() {
                   ]}
                   onPress={() => handleMoodSelect(mood.id)}
                   activeOpacity={0.7}
-                  disabled={showConfirmation}
+                  disabled={showSaveConfirmation}
                   accessibilityLabel={`${mood.label} mood`}
                   accessibilityHint="Logs this mood for the current check-in"
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: selectedMood === mood.id, disabled: showConfirmation }}
+                  accessibilityState={{ selected: selectedMood === mood.id, disabled: showSaveConfirmation }}
                 >
                   <Text style={[styles.moodEmoji, selectedMood === mood.id && styles.moodEmojiSelected]}>
                     {mood.emoji}
@@ -163,19 +162,16 @@ export default function LogMoodScreen() {
             </View>
           </View>
 
-          {/* Confirmation message */}
-          {showConfirmation && selectedMood && (
-            <View style={styles.confirmationContainer}>
-              <Text style={styles.confirmationEmoji}>
-                {MOODS.find(m => m.id === selectedMood)?.emoji}
-              </Text>
-              <Text style={styles.confirmationText}>
-                Mood logged: {MOODS.find(m => m.id === selectedMood)?.label}
-              </Text>
-            </View>
-          )}
         </ScrollView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showSaveConfirmation}
+        icon="😊"
+        title="Mood Logged"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.mood}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

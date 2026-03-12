@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { safeGetItem, safeSetItem } from './safeStorage';
 import * as FileSystem from 'expo-file-system';
-import { logError } from './devLog';
+import { logError, logWarning } from './devLog';
 import { StorageKeys } from './storageKeys';
 
 export interface Photo {
@@ -168,7 +168,7 @@ export async function deletePhoto(id: string): Promise<boolean> {
     try {
       await FileSystem.deleteAsync(photo.uri, { idempotent: true });
     } catch (fileError) {
-      console.warn('Error deleting photo file:', fileError);
+      logWarning('photoStorage.deleteFile', String(fileError));
     }
     
     // Remove from metadata
@@ -254,7 +254,7 @@ export async function clearAllPhotos(): Promise<boolean> {
       try {
         await FileSystem.deleteAsync(photo.uri, { idempotent: true });
       } catch (e) {
-        console.warn('Error deleting photo file:', e);
+        logWarning('photoStorage.deleteFile', String(e));
       }
     }
     

@@ -6,7 +6,7 @@
 import { checkMultipleInteractions, DrugInteraction } from './drugInteractions';
 import { safeGetItem, safeSetItem } from './safeStorage';
 import { generateUniqueId } from './idGenerator';
-import { logError } from './devLog';
+import { devLog, logError } from './devLog';
 import { getTodayDateString } from '../services/carePlanGenerator';
 import { StorageKeys, scopedKey } from './storageKeys';
 
@@ -168,7 +168,7 @@ export async function updateMedication(
     const index = medications.findIndex(m => m.id === id);
 
     if (index === -1) {
-      console.warn(`Medication with id ${id} not found`);
+      devLog(`Medication with id ${id} not found`);
       return null;
     }
 

@@ -65,7 +65,7 @@ export function CaregiverZone({ completedCount, skippedCount, onPause }: Caregiv
           </View>
           <View>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Pause</Text>
-            <Text style={[styles.cardSub, { color: colors.textMuted }]}>1-min reset</Text>
+            <Text style={[styles.cardSub, { color: colors.textMuted }]}>Breathe + tips</Text>
           </View>
         </TouchableOpacity>
       </View>

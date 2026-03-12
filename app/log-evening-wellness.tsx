@@ -28,7 +28,10 @@ import { getTodayDateString } from '../services/carePlanGenerator';
 import { emitDataUpdate } from '../lib/events';
 import { hapticSuccess } from '../utils/hapticFeedback';
 import { EVENT } from '../lib/eventNames';
+import { logWarning } from '../utils/devLog';
 import { emitWellnessEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const MOOD_OPTIONS = [
   { value: 5, emoji: '😄', label: 'Great' },
@@ -120,6 +123,8 @@ export default function LogEveningWellnessScreen() {
   const [bathingStatus, setBathingStatus] = useState<'independent' | 'partial-assist' | 'full-assist' | 'not-today' | null>(null);
   const [mobilityStatus, setMobilityStatus] = useState<'independent' | 'walker' | 'cane' | 'wheelchair' | 'bed-bound' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
 
   const toggleSymptom = (symptom: string) => {
     if (symptom === 'None today') {
@@ -160,11 +165,12 @@ export default function LogEveningWellnessScreen() {
                   emitDataUpdate(EVENT.DAILY_INSTANCES);
                 }
               } catch (e) {
-                console.warn('Could not update care plan instance:', e);
+                logWarning('EveningWellness.updateCarePlan', String(e));
               }
               emitDataUpdate(EVENT.WELLNESS);
               await hapticSuccess();
-              navigateBack();
+              setSavedPreview('Skipped');
+              setShowConfirmation(true);
             } catch (error) {
               Alert.alert('Error', 'Failed to skip wellness check');
             }
@@ -206,12 +212,15 @@ export default function LogEveningWellnessScreen() {
           emitDataUpdate(EVENT.DAILY_INSTANCES);
         }
       } catch (e) {
-        console.warn('Could not update care plan instance:', e);
+        logWarning('EveningWellness.updateCarePlan', String(e));
       }
       emitDataUpdate(EVENT.WELLNESS);
       try { await emitWellnessEvent('evening', { mood: mood!, dayRating: dayRating!, mealsLogged }); } catch {}
       await hapticSuccess();
-      navigateBack();
+      const moodLabel = MOOD_OPTIONS.find(o => o.value === mood)?.label || '';
+      const dayLabel = DAY_RATING_OPTIONS.find(o => o.value === dayRating)?.label || '';
+      setSavedPreview(`Mood: ${moodLabel}, Day: ${dayLabel}`);
+      setShowConfirmation(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to save wellness check');
       setIsSubmitting(false);
@@ -624,6 +633,14 @@ export default function LogEveningWellnessScreen() {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="🌙"
+        title="Evening Check-In Saved"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.wellness}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

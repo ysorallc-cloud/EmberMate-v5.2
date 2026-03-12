@@ -16,6 +16,8 @@ import { getTodayDateString } from '../services/carePlanGenerator';
 import { logInstanceCompletion, DEFAULT_PATIENT_ID } from '../storage/carePlanRepo';
 import { SubScreenHeader } from '../components/SubScreenHeader';
 import { emitNoteEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 export default function LogNoteScreen() {
   const { colors } = useTheme();
@@ -23,6 +25,8 @@ export default function LogNoteScreen() {
   const params = useLocalSearchParams();
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -55,7 +59,8 @@ export default function LogNoteScreen() {
       }
 
       await hapticSuccess();
-      navigateBack();
+      setSavedPreview(content.trim().slice(0, 80));
+      setShowConfirmation(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to save note');
       logError('LogNoteScreen.handleSave', error);
@@ -95,6 +100,14 @@ export default function LogNoteScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="📝"
+        title="Note Saved"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.note}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

@@ -945,18 +945,11 @@ export default function NowScreen() {
         {/* Header: personalized greeting + patient chip */}
         <View style={styles.greetingHeader}>
           <View style={{ flex: 1 }}>
-            <TouchableOpacity
-              onPress={() => navigate('/calendar')}
-              activeOpacity={0.7}
-              style={styles.greetingDateRow}
-              accessibilityLabel="Open calendar"
-              accessibilityRole="button"
-            >
+            <View style={styles.greetingDateRow}>
               <Text style={styles.greetingDate}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </Text>
-              <Text style={styles.greetingDateChevron}>{'\u203A'}</Text>
-            </TouchableOpacity>
+            </View>
             <Text style={styles.greetingText}>
               {getGreeting()}
             </Text>
@@ -1227,22 +1220,6 @@ export default function NowScreen() {
               ? 'Almost there. You\'re doing more than you think.'
               : 'Caregiving is hard. You\'re not behind \u2014 you\'re showing up.'}
           </Text>
-
-          {allPending.length === 0 && todayTimeline.completed.length > 0 && (
-            <TouchableOpacity
-              style={[styles.pausePrompt, { backgroundColor: colors.accentGlow, borderColor: colors.accentBorder }]}
-              onPress={coffeeMoment.startReset}
-              activeOpacity={0.7}
-              accessibilityLabel="Take a moment for yourself. Start breathing exercise."
-              accessibilityRole="button"
-            >
-              <Text style={styles.pausePromptEmoji}>{'\u2615'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.pausePromptTitle, { color: colors.textPrimary }]}>Take a moment for yourself</Text>
-                <Text style={[styles.pausePromptSub, { color: colors.textSecondary }]}>A short breathing exercise</Text>
-              </View>
-            </TouchableOpacity>
-          )}
 
           {/* ═══ FOR YOU ═══ */}
           <CaregiverZone
@@ -1646,10 +1623,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 4,
-  },
-  greetingDateChevron: {
-    fontSize: 10,
-    color: c.textDisabled,
   },
 
   // ── Appointment subtitle ──

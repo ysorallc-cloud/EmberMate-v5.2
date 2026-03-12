@@ -33,6 +33,8 @@ import { EVENT } from '../lib/eventNames';
 import { logError } from '../utils/devLog';
 import { getTodayDateString } from '../services/carePlanGenerator';
 import { emitMealEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const MEAL_TYPES = [
   { id: 'breakfast', label: 'Breakfast', icon: '🌅' },
@@ -87,6 +89,8 @@ export default function LogMeal() {
   const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const [progress, setProgress] = useState<TodayProgress | null>(null);
 
   const today = getTodayDateString();
@@ -241,7 +245,12 @@ export default function LogMeal() {
 
       try { for (const m of selectedMeals) { await emitMealEvent(m); } } catch {}
       await hapticSuccess();
-      navigateBack();
+      const mealLabelsPreview = selectedMeals.map(id => {
+        const meal = MEAL_TYPES.find(m => m.id === id);
+        return meal ? meal.label : id;
+      });
+      setSavedPreview(mealLabelsPreview.join(', '));
+      setShowConfirmation(true);
     } catch (error) {
       logError('LogMeal.handleSave', error);
       Alert.alert('Error', 'Failed to save meal data');
@@ -404,6 +413,14 @@ export default function LogMeal() {
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="🍽️"
+        title="Meal Logged"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.meal}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

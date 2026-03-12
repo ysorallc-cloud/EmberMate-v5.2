@@ -6,7 +6,7 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { safeGetItem, safeSetItem } from './safeStorage';
 import { setKeychainItem, getKeychainItem, removeKeychainItem } from './secureStorage';
-import { logError } from './devLog';
+import { devLog, logError } from './devLog';
 import { StorageKeys } from './storageKeys';
 
 const BIOMETRIC_ENABLED_KEY = StorageKeys.BIOMETRIC_ENABLED;
@@ -135,7 +135,7 @@ export async function authenticateWithBiometrics(
     const capabilities = await checkBiometricCapabilities();
 
     if (!capabilities.isAvailable) {
-      console.warn('Biometric authentication not available');
+      devLog('Biometric authentication not available');
       return false;
     }
 

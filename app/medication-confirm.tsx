@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { navigateBack } from '../lib/navigate';
 import { Colors } from '../theme/theme-tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { createMedication, markMedicationTaken } from '../utils/medicationStorage';
@@ -28,6 +29,8 @@ import { logError } from '../utils/devLog';
 import { emitDataUpdate } from '../lib/events';
 import { EVENT } from '../lib/eventNames';
 import { emitMedicationEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 // Common medications for dropdown
 const COMMON_MEDICATIONS = [
@@ -95,6 +98,8 @@ export default function MedicationLogScreen() {
   const [showMedDropdown, setShowMedDropdown] = useState(false);
   const [showDosageDropdown, setShowDosageDropdown] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const [progress, setProgress] = useState<TodayProgress | null>(null);
 
   // Load rhythm progress on mount
@@ -189,7 +194,8 @@ export default function MedicationLogScreen() {
       await hapticSuccess();
       emitDataUpdate(EVENT.MEDICATION);
       try { await emitMedicationEvent(newMed.id, selectedMedication.trim(), 'taken', { dosage: dosage.trim() }); } catch {}
-      router.back();
+      setSavedPreview(`${selectedMedication.trim()} ${dosage.trim()}`);
+      setShowConfirmation(true);
     } catch (error) {
       logError('MedicationLogScreen.handleSave', error);
       Alert.alert('Error', 'Failed to save medication');
@@ -424,6 +430,14 @@ export default function MedicationLogScreen() {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="💊"
+        title="Medication Confirmed"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.medication}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

@@ -24,6 +24,8 @@ import {
   Animated,
   Easing,
   Platform,
+  Alert,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -39,6 +41,34 @@ const AFFIRMATIONS = [
   'Small steps forward are still progress worth celebrating.',
   'Your compassion is a gift to everyone around you.',
   'Every breath you take is an act of courage.',
+];
+
+const CAREGIVER_ARTICLES = [
+  {
+    emoji: '💡', title: '5 Signs You Need a Break',
+    summary: 'Recognizing burnout before it hits',
+    body: 'Caregiving is a marathon, not a sprint. Watch for these signs: persistent exhaustion even after rest, feeling resentful about caregiving duties, withdrawing from friends and activities, difficulty sleeping, and getting sick more often. If you notice these, it\'s not weakness \u2014 it\'s your body telling you to pause.',
+  },
+  {
+    emoji: '🍳', title: 'Quick Meals for Busy Caregivers',
+    summary: '15-minute recipes when time is short',
+    body: 'You can\'t pour from an empty cup. Try these quick wins: overnight oats (prep in 2 min), sheet pan dinners (10 min prep, oven does the rest), smoothie packs (pre-bag ingredients, blend in 60 seconds). Feeding yourself well is part of caregiving.',
+  },
+  {
+    emoji: '🤝', title: 'Asking for Help Isn\'t Weakness',
+    summary: 'How to build your support network',
+    body: 'Most people want to help but don\'t know how. Be specific: a concrete request works better than a vague one. Start small, accept imperfection, and remember: delegating is a skill that gets easier with practice.',
+  },
+  {
+    emoji: '🌙', title: 'Sleep Tips When You\'re On Call',
+    summary: 'Rest strategies for light sleepers',
+    body: 'Create a wind-down ritual: dim lights 30 min before bed, avoid screens, keep the room cool. If you\'re a light sleeper, try white noise. Even 20 minutes of rest between wake-ups counts. Your body is more resilient than you think.',
+  },
+  {
+    emoji: '❤️', title: 'Managing Caregiver Guilt',
+    summary: 'You\'re doing better than you think',
+    body: 'Guilt is the shadow of love. If you feel guilty about taking a break, that\'s proof you care deeply. The truth is: a rested caregiver provides better care. You deserve moments of joy, and taking them doesn\'t diminish your dedication.',
+  },
 ];
 
 // 4-4-4 box breathing: 4s inhale, 4s hold, 4s exhale = 12s per cycle
@@ -82,6 +112,17 @@ export const CoffeeMomentMinimal: React.FC<CoffeeMomentMinimalProps> = ({
     return AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)];
   });
 
+  // Rotate articles by day of week (show 3 per session)
+  const todayArticles = useMemo(() => {
+    const dayIndex = new Date().getDay();
+    const start = dayIndex % CAREGIVER_ARTICLES.length;
+    return [
+      CAREGIVER_ARTICLES[start],
+      CAREGIVER_ARTICLES[(start + 1) % CAREGIVER_ARTICLES.length],
+      CAREGIVER_ARTICLES[(start + 2) % CAREGIVER_ARTICLES.length],
+    ];
+  }, []);
+
   // Breathing orb animation
   const scaleAnim = useRef(new Animated.Value(0.6)).current;
   const orbOpacity = useRef(new Animated.Value(0.3)).current;
@@ -109,7 +150,6 @@ export const CoffeeMomentMinimal: React.FC<CoffeeMomentMinimalProps> = ({
         if (prev <= 1) {
           clearInterval(timer);
           setCompleting(true);
-          setTimeout(() => onClose(), 2000);
           return 0;
         }
         return prev - 1;
@@ -237,9 +277,45 @@ export const CoffeeMomentMinimal: React.FC<CoffeeMomentMinimalProps> = ({
           </TouchableOpacity>
 
           {completing ? (
-            <View style={styles.completingContainer}>
+            <ScrollView
+              contentContainerStyle={styles.completingContainer}
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.completingText}>Take your time.</Text>
-            </View>
+
+              {/* Show articles after breathing completes */}
+              <View style={styles.articlesSection}>
+                <Text style={styles.articlesSectionTitle}>
+                  Something for you while you're here:
+                </Text>
+                {todayArticles.map((article, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.articleCard}
+                    onPress={() => {
+                      Alert.alert(article.title, article.body);
+                    }}
+                  >
+                    <Text style={styles.articleEmoji}>{article.emoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.articleTitle}>{article.title}</Text>
+                      <Text style={styles.articleSummary}>{article.summary}</Text>
+                    </View>
+                    <Text style={styles.articleChevron}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={handleExit}
+                activeOpacity={0.7}
+                accessibilityLabel="Close breathing exercise"
+                accessibilityRole="button"
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </ScrollView>
           ) : started ? (
             <>
               {/* Microcopy — permission, not invitation */}
@@ -523,12 +599,69 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+    paddingHorizontal: 20,
+    flexGrow: 1,
   },
   completingText: {
     fontSize: 20,
     fontWeight: '300',
     color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
+  },
+
+  // Articles section
+  articlesSection: {
+    width: '100%',
+    marginTop: 32,
+  },
+  articlesSectionTitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.4)',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  articleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  articleEmoji: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  articleTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 2,
+  },
+  articleSummary: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.4)',
+  },
+  articleChevron: {
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.3)',
+    marginLeft: 8,
+  },
+  doneButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 24,
+    backgroundColor: 'rgba(20, 184, 166, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(20, 184, 166, 0.25)',
+  },
+  doneButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: 'rgba(20, 184, 166, 0.9)',
   },
 
   // Dismiss hint

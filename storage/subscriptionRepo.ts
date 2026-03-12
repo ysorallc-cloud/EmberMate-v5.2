@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { safeGetItem, safeSetItem } from '../utils/safeStorage';
+import { devLog } from '../utils/devLog';
 import { emitDataUpdate } from '../lib/events';
 import { EVENT } from '../lib/eventNames';
 import { GlobalKeys } from '../utils/storageKeys';
@@ -86,7 +87,7 @@ export async function validateReceipt(_receipt: string): Promise<boolean> {
   //   2. Backend verifies with App Store / Google Play and returns validity + expiry
   //   3. Replace this stub with the response from your backend
   // Until then, reject in production to prevent free premium access.
-  console.warn('Receipt validation: no server endpoint configured. Rejecting receipt in production.');
+  devLog('Receipt validation: no server endpoint configured. Rejecting receipt in production.');
   return false;
 }
 

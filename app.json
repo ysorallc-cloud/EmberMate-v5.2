@@ -118,22 +118,22 @@
       "typedRoutes": true
     },
     "extra": {
-      "sentryDsn": "https://2797ddae89180f0fc0978e5ba2491cf8@o4510988284919808.ingest.us.sentry.io/4510988286558208",
+      "sentryDsn": "",
       "eas": {
         "projectId": "c1c2cfb3-2d20-485c-9e9d-29a53d853228"
       },
       "router": {
         "origin": false
       },
-      "privacyPolicyUrl": "https://ysorallc.org/privacy",
-      "termsOfServiceUrl": "https://ysorallc.org/terms",
-      "supportUrl": "https://ysorallc.org/support",
-      "helpUrl": "https://ysorallc.org/support",
+      "privacyPolicyUrl": "https://www.ysorallc.org/privacy",
+      "termsOfServiceUrl": "https://www.ysorallc.org/terms",
+      "supportUrl": "https://www.ysorallc.org/support",
+      "helpUrl": "https://www.ysorallc.org/support",
       "legalUrls": {
-        "privacy": "https://ysorallc.org/privacy",
-        "terms": "https://ysorallc.org/terms",
-        "dataRequest": "https://ysorallc.org/data-request",
-        "dataDeletion": "https://ysorallc.org/data-deletion"
+        "privacy": "https://www.ysorallc.org/privacy",
+        "terms": "https://www.ysorallc.org/terms",
+        "dataRequest": "https://www.ysorallc.org/data-request",
+        "dataDeletion": "https://www.ysorallc.org/data-deletion"
       },
       "security": {
         "encryption": "AES-256",

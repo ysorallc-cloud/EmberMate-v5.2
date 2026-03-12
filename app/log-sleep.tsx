@@ -31,6 +31,8 @@ import { logInstanceCompletion, DEFAULT_PATIENT_ID } from '../storage/carePlanRe
 import { emitDataUpdate } from '../lib/events';
 import { EVENT } from '../lib/eventNames';
 import { emitSleepEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const QUALITY_LABELS = ['Very Poor', 'Poor', 'Fair', 'Good', 'Excellent'];
 
@@ -41,6 +43,8 @@ export default function LogSleep() {
   const [hours, setHours] = useState('');
   const [quality, setQuality] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
 
   const today = getTodayDateString();
 
@@ -114,7 +118,8 @@ export default function LogSleep() {
 
       try { await emitSleepEvent(hoursNum, String(quality || 3)); } catch {}
       await hapticSuccess();
-      navigateBack();
+      setSavedPreview(`${hoursNum}h sleep, quality ${quality || 3}/5`);
+      setShowConfirmation(true);
     } catch (error) {
       logError('LogSleep.handleSave', error);
       Alert.alert('Error', 'Failed to save sleep data');
@@ -220,6 +225,14 @@ export default function LogSleep() {
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="😴"
+        title="Sleep Logged"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.sleep}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

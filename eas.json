@@ -24,7 +24,8 @@
       },
       "channel": "preview",
       "env": {
-        "APP_ENV": "preview"
+        "APP_ENV": "preview",
+        "SENTRY_DSN": "https://2797ddae89180f0fc0978e5ba2491cf8@o4510988284919808.ingest.us.sentry.io/4510988286558208"
       }
     },
     "production": {
@@ -37,7 +38,8 @@
       },
       "channel": "production",
       "env": {
-        "APP_ENV": "production"
+        "APP_ENV": "production",
+        "SENTRY_DSN": "https://2797ddae89180f0fc0978e5ba2491cf8@o4510988284919808.ingest.us.sentry.io/4510988286558208"
       }
     }
   },

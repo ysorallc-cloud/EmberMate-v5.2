@@ -7,8 +7,10 @@ import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
 import { StorageKeyPrefixes } from './storageKeys';
 
-// Read DSN from app.json extra config; falls back to placeholder when unconfigured
-const SENTRY_DSN = Constants.expoConfig?.extra?.sentryDsn ?? 'YOUR_DSN_HERE';
+// Read DSN from environment variable (EAS builds), app.json extra config, or placeholder
+const SENTRY_DSN = process.env.SENTRY_DSN
+  || Constants.expoConfig?.extra?.sentryDsn
+  || 'YOUR_DSN_HERE';
 
 let initialized = false;
 

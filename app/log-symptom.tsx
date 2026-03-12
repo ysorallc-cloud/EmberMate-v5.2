@@ -29,6 +29,8 @@ import { EVENT } from '../lib/eventNames';
 import { getTodayDateString } from '../services/carePlanGenerator';
 import { logInstanceCompletion, DEFAULT_PATIENT_ID } from '../storage/carePlanRepo';
 import { SubScreenHeader } from '../components/SubScreenHeader';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const COMMON_SYMPTOMS = [
   'Pain', 'Nausea', 'Dizziness', 'Fatigue',
@@ -42,6 +44,8 @@ export default function LogSymptomScreen() {
   const [severity, setSeverity] = useState(5);
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -89,7 +93,8 @@ export default function LogSymptomScreen() {
       }
 
       await hapticSuccess();
-      navigateBack();
+      setSavedPreview(`${symptomToLog.trim()}, severity ${severity}/10`);
+      setShowConfirmation(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to log symptom. Please try again.');
       logError('LogSymptomScreen.handleSave', error);
@@ -222,6 +227,14 @@ export default function LogSymptomScreen() {
         </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="🩺"
+        title="Symptom Logged"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.symptom}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

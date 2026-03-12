@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as Crypto from 'expo-crypto';
-import { logError } from './devLog';
+import { devLog, logError } from './devLog';
 
 // Pre-seeded crypto buffer for synchronous ID generation
 let cryptoBuffer: Uint8Array = new Uint8Array(256);
@@ -120,7 +120,7 @@ export function generateUniqueIdWithCheck(existingIds: string[]): string {
     }
 
     attempts++;
-    console.warn(`[IDGenerator] Collision detected, retrying... (attempt ${attempts})`);
+    devLog(`[IDGenerator] Collision detected, retrying... (attempt ${attempts})`);
   }
 
   // If we somehow get 10 collisions, add extra entropy

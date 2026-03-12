@@ -146,7 +146,7 @@ export function PatientSwitcherModal({ visible, onClose }: PatientSwitcherModalP
               onPress={async () => {
                 const result = await checkFeatureAccess('multi_patient');
                 if (!result.allowed) {
-                  Alert.alert('Upgrade Required', result.reason || 'Multi-patient support requires an upgrade.');
+                  Alert.alert('Patient Limit Reached', 'You have reached the maximum number of patients (10).');
                   return;
                 }
                 setShowAdd(true);

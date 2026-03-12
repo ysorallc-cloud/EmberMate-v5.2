@@ -61,7 +61,6 @@ describe('Medication data consistency', () => {
   const DEFAULT_PATIENT_ID = 'default';
 
   beforeEach(async () => {
-    // resetAllMockStores is called automatically by jest.setup.js beforeEach
     await resetCarePlanConfig(DEFAULT_PATIENT_ID);
   });
 

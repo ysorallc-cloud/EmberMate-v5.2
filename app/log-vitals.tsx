@@ -20,6 +20,8 @@ import { logInstanceCompletion, DEFAULT_PATIENT_ID } from '../storage/carePlanRe
 import { getTodayDateString } from '../services/carePlanGenerator';
 import { SubScreenHeader } from '../components/SubScreenHeader';
 import { emitVitalsEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 // Vital sign validation ranges
 const VITAL_RANGES: Record<string, { min: number; max: number; warnLow?: number; warnHigh?: number; label: string; unit: string }> = {
@@ -62,6 +64,8 @@ export default function LogVitalsScreen() {
   const [glucose, setGlucose] = useState('');
   const [weight, setWeight] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [progress, setProgress] = useState<TodayProgress | null>(null);
 
@@ -145,7 +149,13 @@ export default function LogVitalsScreen() {
       await hapticSuccess();
       emitDataUpdate(EVENT.VITALS);
       try { await emitVitalsEvent({ systolic: systolic ? parseFloat(systolic) : undefined, diastolic: diastolic ? parseFloat(diastolic) : undefined, heartRate: heartRate ? parseFloat(heartRate) : undefined, oxygen: oxygen ? parseFloat(oxygen) : undefined, temperature: temperature ? parseFloat(temperature) : undefined, glucose: glucose ? parseFloat(glucose) : undefined, weight: weight ? parseFloat(weight) : undefined }); } catch {}
-      navigateBack();
+      const parts: string[] = [];
+      if (systolic && diastolic) parts.push(`BP: ${systolic}/${diastolic}`);
+      if (heartRate) parts.push(`HR: ${heartRate}`);
+      if (oxygen) parts.push(`O2: ${oxygen}%`);
+      if (temperature) parts.push(`Temp: ${temperature}`);
+      setSavedPreview(parts.join(', '));
+      setShowConfirmation(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to log vitals');
       logError('LogVitalsScreen.handleSave', error);
@@ -269,6 +279,14 @@ export default function LogVitalsScreen() {
         </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="🌡️"
+        title="Vitals Recorded"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.vitals}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }

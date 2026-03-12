@@ -60,6 +60,45 @@ export async function computePeriodSummary(daysBack: number): Promise<PeriodSumm
   };
 }
 
+export function generateSummaryText(
+  insights: InsightResults,
+  summary: PeriodSummary,
+  appointments: { provider: string; date: string }[],
+): string {
+  const parts: string[] = [];
+
+  // Lead with the top improving item if any
+  if (insights.improving.length > 0) {
+    parts.push(insights.improving[0].title + '.');
+  }
+
+  // Add the top watch item if any
+  if (insights.watch.length > 0) {
+    parts.push(insights.watch[0].title + '.');
+  }
+
+  // Add top pattern if any
+  if (insights.patterns.length > 0 && parts.length < 3) {
+    parts.push(insights.patterns[0].title + '.');
+  }
+
+  // Add next appointment if within range
+  if (appointments.length > 0) {
+    const next = appointments[0];
+    parts.push(`Upcoming: ${next.provider}.`);
+  }
+
+  // Fallback if no insights yet
+  if (parts.length === 0) {
+    if (summary.totalInstances === 0) {
+      return 'Start logging to see patterns and trends here.';
+    }
+    return `${summary.completionRate}% average adherence over ${summary.totalDays} days.`;
+  }
+
+  return parts.join(' ');
+}
+
 export async function generateAllInsights(
   config: CarePlanConfig,
   daysBack: number = 7

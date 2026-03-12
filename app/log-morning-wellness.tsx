@@ -26,7 +26,10 @@ import { getTodayDateString } from '../services/carePlanGenerator';
 import { emitDataUpdate } from '../lib/events';
 import { hapticSuccess } from '../utils/hapticFeedback';
 import { EVENT } from '../lib/eventNames';
+import { logWarning } from '../utils/devLog';
 import { emitWellnessEvent } from '../utils/eventEmitter';
+import { SaveConfirmation } from '../components/common/SaveConfirmation';
+import { SAVE_DESTINATIONS } from '../utils/saveDestinations';
 
 const SLEEP_OPTIONS = [
   { value: 5, emoji: '😴', label: 'Excellent' },
@@ -78,6 +81,8 @@ export default function LogMorningWellnessScreen() {
   const [orientation, setOrientation] = useState<'alert-oriented' | 'confused-responsive' | 'disoriented' | 'unresponsive' | null>(null);
   const [decisionMaking, setDecisionMaking] = useState<'own-decisions' | 'needs-guidance' | 'unable-to-decide' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [savedPreview, setSavedPreview] = useState('');
 
   const canSubmit = sleepQuality !== null && mood !== null && energyLevel !== null;
 
@@ -112,11 +117,12 @@ export default function LogMorningWellnessScreen() {
                   emitDataUpdate(EVENT.DAILY_INSTANCES);
                 }
               } catch (e) {
-                console.warn('Could not update care plan instance:', e);
+                logWarning('MorningWellness.updateCarePlan', String(e));
               }
               emitDataUpdate(EVENT.WELLNESS);
               await hapticSuccess();
-              navigateBack();
+              setSavedPreview('Skipped');
+              setShowConfirmation(true);
             } catch (error) {
               Alert.alert('Error', 'Failed to skip wellness check');
             }
@@ -150,12 +156,16 @@ export default function LogMorningWellnessScreen() {
           emitDataUpdate(EVENT.DAILY_INSTANCES);
         }
       } catch (e) {
-        console.warn('Could not update care plan instance:', e);
+        logWarning('MorningWellness.updateCarePlan', String(e));
       }
       emitDataUpdate(EVENT.WELLNESS);
       try { await emitWellnessEvent('morning', { sleepQuality: sleepQuality!, mood: mood!, energyLevel: energyLevel! }); } catch {}
       await hapticSuccess();
-      navigateBack();
+      const moodLabel = MOOD_OPTIONS.find(o => o.value === mood)?.label || '';
+      const energyLabel = ENERGY_OPTIONS.find(o => o.value === energyLevel)?.label || '';
+      const sleepLabel = SLEEP_OPTIONS.find(o => o.value === sleepQuality)?.label || '';
+      setSavedPreview(`Mood: ${moodLabel}, Energy: ${energyLabel}, Sleep: ${sleepLabel}`);
+      setShowConfirmation(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to save wellness check');
       setIsSubmitting(false);
@@ -396,6 +406,14 @@ export default function LogMorningWellnessScreen() {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+      <SaveConfirmation
+        visible={showConfirmation}
+        icon="🌅"
+        title="Morning Check-In Saved"
+        preview={savedPreview}
+        destinations={SAVE_DESTINATIONS.wellness}
+        onDismiss={() => navigateBack()}
+      />
     </SafeAreaView>
   );
 }
