@@ -28,7 +28,7 @@ interface StatusLine {
 // COMPONENT
 // ============================================================================
 
-export function HandoffCard() {
+export function HandoffCard({ onSharePress }: { onSharePress?: () => void } = {}) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
@@ -126,7 +126,7 @@ export function HandoffCard() {
       <View style={styles.header}>
         <Text style={styles.headerLabel}>TODAY'S SUMMARY</Text>
         <TouchableOpacity
-          onPress={() => navigate('/care-report?scope=full')}
+          onPress={() => onSharePress?.()}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Share care summary"
           accessibilityRole="button"
@@ -178,7 +178,7 @@ export function HandoffCard() {
       {/* Footer Link */}
       <TouchableOpacity
         style={styles.footerLink}
-        onPress={() => navigate('/care-report?scope=handoff')}
+        onPress={() => navigate('/(tabs)/journal')}
         activeOpacity={0.7}
         accessibilityLabel="View full care brief"
         accessibilityRole="link"

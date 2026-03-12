@@ -70,7 +70,7 @@ export function HandoffPrompt() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.viewButton}
-          onPress={() => router.push('/care-report?scope=handoff')}
+          onPress={() => router.push('/(tabs)/journal')}
           activeOpacity={0.7}
           accessibilityLabel="View care brief"
           accessibilityRole="button"

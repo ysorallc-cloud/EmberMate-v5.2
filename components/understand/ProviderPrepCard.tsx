@@ -38,7 +38,7 @@ export function ProviderPrepCard({ data }: Props) {
       {/* Care Brief link */}
       <TouchableOpacity
         style={styles.careBriefLink}
-        onPress={() => navigate('/care-report?scope=visit')}
+        onPress={() => navigate('/provider-prep')}
         activeOpacity={0.7}
         accessibilityRole="link"
         accessibilityLabel="View full Care Brief"

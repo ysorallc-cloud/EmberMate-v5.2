@@ -1,6 +1,6 @@
 // ============================================================================
 // HandoffPromptCard — Contextual card on Now tab after 4pm
-// Links to /care-report?scope=handoff
+// Links to Journal tab
 // ============================================================================
 
 import React, { useMemo } from 'react';
@@ -22,7 +22,7 @@ export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedC
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => navigate('/care-report?scope=handoff')}
+      onPress={() => navigate('/(tabs)/journal')}
       activeOpacity={0.7}
       accessibilityLabel="Create handoff report for tonight's caregiver"
       accessibilityRole="button"
@@ -38,7 +38,7 @@ export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedC
         </View>
         <TouchableOpacity
           style={styles.createButton}
-          onPress={() => navigate('/care-report?scope=handoff')}
+          onPress={() => navigate('/(tabs)/journal')}
           activeOpacity={0.7}
           accessibilityLabel="Create handoff report"
           accessibilityRole="button"

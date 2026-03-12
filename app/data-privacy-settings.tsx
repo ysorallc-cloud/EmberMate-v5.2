@@ -469,7 +469,7 @@ export default function DataPrivacySettingsScreen() {
               {/* Export Data */}
               <TouchableOpacity
                 style={styles.settingRow}
-                onPress={() => router.push('/care-report?scope=today')}
+                onPress={() => router.push('/(tabs)/journal')}
                 activeOpacity={0.7}
                 accessibilityLabel="Export daily report, share a summary with your care team"
                 accessibilityRole="link"

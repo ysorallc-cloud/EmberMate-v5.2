@@ -19,7 +19,7 @@ export function CaregiverZone({ completedCount, skippedCount, onPause }: Caregiv
         {/* Handoff */}
         <TouchableOpacity
           style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
-          onPress={() => navigate('/care-report?scope=handoff')}
+          onPress={() => navigate('/(tabs)/journal')}
           activeOpacity={0.7}
           accessibilityLabel={`Handoff: ${completedCount} items logged. Tap to view.`}
           accessibilityRole="button"

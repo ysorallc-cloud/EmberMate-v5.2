@@ -13,7 +13,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuroraBackground } from '../../components/aurora/AuroraBackground';
@@ -40,9 +39,7 @@ import { safeGetItem } from '../../utils/safeStorage';
 import { StorageKeys } from '../../utils/storageKeys';
 import { getMedications } from '../../utils/medicationStorage';
 import { hasSampleData } from '../../utils/sampleDataManager';
-import { ReportPreviewModal } from '../../components/shared/ReportPreviewModal';
-import { buildDailySummaryReport, buildClinicalReportData } from '../../utils/reportBuilders';
-import { generateAndSharePDF, ReportData } from '../../utils/pdfExport';
+import { ShareReportSheet } from '../../components/journal/ShareReportSheet';
 import {
   generateReflections,
   generateEnhancedNarrative,
@@ -97,11 +94,7 @@ export default function JournalTab() {
   const [patientAge, setPatientAge] = useState<string | null>(null);
   const [activeMedCount, setActiveMedCount] = useState(0);
   const [isSampleMode, setIsSampleMode] = useState(false);
-  const [showDailyPreview, setShowDailyPreview] = useState(false);
-  const [showClinicalPreview, setShowClinicalPreview] = useState(false);
-  const [dailyReport, setDailyReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
-  const [clinicalReport, setClinicalReport] = useState<{ reportData: ReportData; previewLines: string[] } | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const coffeeMoment = useCoffeeMoment(0, false);
 
   const loadReport = useCallback(async () => {
@@ -525,86 +518,6 @@ export default function JournalTab() {
   ];
 
   // ============================================================================
-  // SHARE / REPORT HANDLERS
-  // ============================================================================
-  function handleShareDaily() {
-    if (!brief) {
-      Alert.alert('Not Ready', 'Journal is still loading. Try again in a moment.');
-      return;
-    }
-    const result = buildDailySummaryReport(
-      brief,
-      dateStr,
-      dayName,
-      reportGlanceTiles,
-      buildHandoffNotes(),
-    );
-    setDailyReport(result);
-    setShowDailyPreview(true);
-  }
-
-  function handleShareClinical() {
-    if (!brief) {
-      Alert.alert('Not Ready', 'Clinical data is still loading. Try again in a moment.');
-      return;
-    }
-    const result = buildClinicalReportData(brief);
-    setClinicalReport(result);
-    setShowClinicalPreview(true);
-  }
-
-  function handleDailyExport() {
-    if (!dailyReport) return;
-    Alert.alert(
-      'Share Daily Summary',
-      'This PDF contains health information. Only share with trusted caregivers or healthcare providers.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Share PDF',
-          onPress: async () => {
-            setExporting(true);
-            try {
-              await generateAndSharePDF(dailyReport.reportData, {
-                name: patientName || undefined,
-                age: patientAge || undefined,
-              });
-              setShowDailyPreview(false);
-            } catch { /* user cancelled or error handled in util */ }
-            setExporting(false);
-          },
-        },
-      ],
-    );
-  }
-
-  function handleClinicalExport() {
-    if (!clinicalReport) return;
-    Alert.alert(
-      'Share Clinical Report',
-      'This PDF contains full medical history, medications, and vitals. Only share with healthcare providers.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Share PDF',
-          style: 'destructive',
-          onPress: async () => {
-            setExporting(true);
-            try {
-              await generateAndSharePDF(clinicalReport.reportData, {
-                name: patientName || undefined,
-                age: patientAge || undefined,
-              });
-              setShowClinicalPreview(false);
-            } catch { /* user cancelled or error handled in util */ }
-            setExporting(false);
-          },
-        },
-      ],
-    );
-  }
-
-  // ============================================================================
   // PATIENT CONTEXT
   // ============================================================================
   const allergies = medicalInfo?.allergies ?? [];
@@ -656,7 +569,7 @@ export default function JournalTab() {
                 )}
                 <TouchableOpacity
                   style={s.headerShareBtn}
-                  onPress={handleShareDaily}
+                  onPress={() => setShowShareSheet(true)}
                   activeOpacity={0.7}
                   accessibilityLabel="Share daily summary"
                   accessibilityRole="button"
@@ -840,30 +753,6 @@ export default function JournalTab() {
             </>
           )}
 
-          {/* ─── SHARE ACTIONS ─── */}
-          {brief && (
-            <View style={s.footerActions}>
-              <TouchableOpacity
-                style={s.footerShareBtn}
-                onPress={handleShareDaily}
-                activeOpacity={0.7}
-                accessibilityLabel="Share daily summary as PDF"
-                accessibilityRole="button"
-              >
-                <Text style={s.footerShareBtnText}>{'\uD83D\uDCCB'} Share Summary</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.footerReportBtn}
-                onPress={handleShareClinical}
-                activeOpacity={0.7}
-                accessibilityLabel="Generate clinical report"
-                accessibilityRole="button"
-              >
-                <Text style={s.footerReportBtnText}>{'\uD83E\uDE7A'} Clinical Report</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
           {/* ─── CAREGIVER PAUSE ─── */}
           <TouchableOpacity
             onPress={coffeeMoment.startReset}
@@ -889,24 +778,17 @@ export default function JournalTab() {
         </ScrollView>
       </View>
 
-      <ReportPreviewModal
-        visible={showDailyPreview}
-        title="Daily Summary"
-        infoText="Preview of your daily journal. Tap 'Share PDF' to export."
-        previewLines={dailyReport?.previewLines ?? []}
-        onExport={handleDailyExport}
-        onClose={() => setShowDailyPreview(false)}
-        exporting={exporting}
-      />
-      <ReportPreviewModal
-        visible={showClinicalPreview}
-        title="Clinical Report"
-        infoText="30-day clinical summary for healthcare providers."
-        previewLines={clinicalReport?.previewLines ?? []}
-        onExport={handleClinicalExport}
-        onClose={() => setShowClinicalPreview(false)}
-        exporting={exporting}
-      />
+      {brief && (
+        <ShareReportSheet
+          visible={showShareSheet}
+          onClose={() => setShowShareSheet(false)}
+          brief={brief}
+          patientName={patientName}
+          patientAge={patientAge || undefined}
+          glanceStats={reportGlanceTiles}
+          handoffNotes={buildHandoffNotes()}
+        />
+      )}
       {coffeeMoment.showModal && (
         <CoffeeMomentMinimal
           visible={coffeeMoment.showModal}
@@ -1278,41 +1160,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     backgroundColor: c.border,
     marginHorizontal: 14,
     marginVertical: 4,
-  },
-
-  // ─── FOOTER SHARE ACTIONS ───
-  footerActions: {
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-    marginTop: 20,
-    marginBottom: 4,
-  },
-  footerShareBtn: {
-    backgroundColor: c.accentDim,
-    borderWidth: 1,
-    borderColor: c.accentBorder,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  footerShareBtnText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: c.accent,
-  },
-  footerReportBtn: {
-    backgroundColor: c.accentDim,
-    borderWidth: 1,
-    borderColor: c.accentBorder,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  footerReportBtnText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: c.accent,
   },
 
   // ─── CAREGIVER PAUSE LINK ───

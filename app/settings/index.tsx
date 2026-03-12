@@ -381,7 +381,7 @@ export default function SettingsScreen() {
           title: 'Export Summary',
           subtitle: 'Create care summary PDF',
           color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => router.push('/care-report?scope=full'),
+          onPress: () => router.push('/(tabs)/journal'),
         },
         {
           id: 'notification-settings',
