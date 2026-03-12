@@ -968,14 +968,6 @@ export default function NowScreen() {
               </View>
               <Text style={{ fontSize: 10, color: colors.textDisabled }}>{'\u25BE'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigate('/settings')}
-              style={styles.settingsBtn}
-              accessibilityLabel="Settings"
-              accessibilityRole="button"
-            >
-              <Text style={[styles.settingsIcon, { color: colors.textMuted }]}>{'\u2699\uFE0F'}</Text>
-            </TouchableOpacity>
           </View>
         </View>
         {showPatientSwitcher && (
@@ -1297,13 +1289,6 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  settingsBtn: {
-    padding: 4,
-  },
-  settingsIcon: {
-    fontSize: 18,
-  },
-
   // Patient chip
   patientChip: {
     flexDirection: 'row',

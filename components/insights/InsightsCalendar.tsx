@@ -8,17 +8,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { CalendarDay } from '../../types/calendar';
-import { getHeatColor, getHeatBorder, CAT_COLORS } from '../../utils/calendarColors';
-
-function getDayCategoryColors(day: CalendarDay): string[] {
-  const cats: string[] = [];
-  if ((day.medsDone ?? 0) > 0) cats.push(CAT_COLORS.meds);
-  if (day.vitals) cats.push(CAT_COLORS.vitals);
-  if ((day.mealsLogged ?? 0) > 0) cats.push(CAT_COLORS.meals);
-  if (day.wellness) cats.push(CAT_COLORS.wellness);
-  if (day.hasAppointment) cats.push(CAT_COLORS.appt);
-  return cats;
-}
+import { getHeatColor, getHeatBorder, CAT_COLORS, getDayCategoryColors } from '../../utils/calendarColors';
 
 // ── Segmented bar sub-component ──
 

@@ -67,7 +67,12 @@ export default function SettingsScreen() {
   const [appointmentCount, setAppointmentCount] = useState(0);
   const [caregiverCount, setCaregiverCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
+    profile: true,
+    appearance: true,
+    privacy: true,
+    about: true,
+  });
 
   useEffect(() => {
     loadPatientName();
@@ -374,14 +379,6 @@ export default function SettingsScreen() {
           subtitle: 'Custom alert thresholds',
           color: 'rgba(251, 191, 36, 0.14)',
           onPress: () => navigate('/vital-threshold-settings'),
-        },
-        {
-          id: 'export-summary',
-          icon: '📤',
-          title: 'Export Summary',
-          subtitle: 'Create care summary PDF',
-          color: 'rgba(255, 255, 255, 0.07)',
-          onPress: () => router.push('/(tabs)/journal'),
         },
         {
           id: 'notification-settings',

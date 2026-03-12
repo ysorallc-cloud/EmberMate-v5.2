@@ -26,11 +26,19 @@ describe('calendarColors', () => {
     expect(getHeatBorder(undefined, '#fallback')).toBe('#fallback');
   });
 
-  it('CAT_COLORS has expected keys', () => {
-    expect(CAT_COLORS.meds).toBeDefined();
+  it('CAT_COLORS.meds is #60A5FA', () => {
+    expect(CAT_COLORS.meds).toBe('#60A5FA');
+  });
+
+  it('CAT_COLORS has all expected keys', () => {
     expect(CAT_COLORS.vitals).toBeDefined();
     expect(CAT_COLORS.meals).toBeDefined();
     expect(CAT_COLORS.wellness).toBeDefined();
     expect(CAT_COLORS.appt).toBeDefined();
+  });
+
+  it('getDayCategoryColors is exported', () => {
+    const { getDayCategoryColors } = require('../utils/calendarColors');
+    expect(typeof getDayCategoryColors).toBe('function');
   });
 });

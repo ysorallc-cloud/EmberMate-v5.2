@@ -24,4 +24,8 @@ describe('Insights tab integration', () => {
   it('has insightSummaryCard style', () => {
     expect(content).toContain('insightSummaryCard');
   });
+
+  it('summaryRow style does NOT exist (old 3-stat layout removed)', () => {
+    expect(content).not.toContain('summaryRow');
+  });
 });

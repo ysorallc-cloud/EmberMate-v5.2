@@ -30,3 +30,16 @@ export const CAT_COLORS = {
   wellness: '#A78BFA',
   appt: '#EAB308',
 } as const;
+
+// Derive which categories were active on a given CalendarDay
+import type { CalendarDay } from '../types/calendar';
+
+export function getDayCategoryColors(day: CalendarDay): string[] {
+  const cats: string[] = [];
+  if ((day.medsDone ?? 0) > 0) cats.push(CAT_COLORS.meds);
+  if (day.vitals) cats.push(CAT_COLORS.vitals);
+  if ((day.mealsLogged ?? 0) > 0) cats.push(CAT_COLORS.meals);
+  if (day.wellness) cats.push(CAT_COLORS.wellness);
+  if (day.hasAppointment) cats.push(CAT_COLORS.appt);
+  return cats;
+}
