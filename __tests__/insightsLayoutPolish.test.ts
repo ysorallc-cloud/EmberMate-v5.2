@@ -28,13 +28,8 @@ describe('Insights layout polish (Fix 5)', () => {
     expect(calendarSrc).not.toContain('legendSwatch');
   });
 
-  test('legend abbreviates Wellness to Well.', () => {
-    expect(calendarSrc).toContain("wellness: 'Well.'");
-  });
-
-  test('legend is a single row (no heatmap row)', () => {
-    // Only one legendRow in the JSX (not two)
-    const legendMatches = calendarSrc.match(/styles\.legendRow/g);
-    expect(legendMatches?.length).toBe(1);
+  test('legend is fully removed (clean cells redesign)', () => {
+    expect(calendarSrc).not.toContain('legendContainer');
+    expect(calendarSrc).not.toContain('legendRow');
   });
 });

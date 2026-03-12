@@ -388,7 +388,10 @@ export const CoffeeMomentMinimal: React.FC<CoffeeMomentMinimalProps> = ({
               <Text style={styles.dismissHint}>Tap anywhere to return</Text>
             </>
           ) : (
-            <View style={styles.durationSelector}>
+            <ScrollView
+              contentContainerStyle={styles.durationSelector}
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.durationTitle}>Take a moment</Text>
               <Text style={styles.durationSubtitle}>How long do you have?</Text>
               <View style={styles.durationOptions}>
@@ -438,7 +441,28 @@ export const CoffeeMomentMinimal: React.FC<CoffeeMomentMinimalProps> = ({
               >
                 <Text style={styles.beginButtonText}>Begin</Text>
               </TouchableOpacity>
-            </View>
+
+              {/* Caregiver articles */}
+              <View style={styles.articlesSection}>
+                <Text style={styles.articlesSectionTitle}>
+                  Something for you:
+                </Text>
+                {todayArticles.map((article, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.articleCard}
+                    onPress={() => Alert.alert(article.title, article.body)}
+                  >
+                    <Text style={styles.articleEmoji}>{article.emoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.articleTitle}>{article.title}</Text>
+                      <Text style={styles.articleSummary}>{article.summary}</Text>
+                    </View>
+                    <Text style={styles.articleChevron}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           )}
         </LinearGradient>
       </Pressable>

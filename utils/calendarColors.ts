@@ -5,11 +5,11 @@
 
 export function getHeatColor(pct: number | undefined): string {
   if (pct === undefined || pct < 0) return 'transparent';
-  if (pct >= 90) return 'rgba(16,185,129,0.35)';
-  if (pct >= 70) return 'rgba(16,185,129,0.18)';
-  if (pct >= 50) return 'rgba(245,158,11,0.18)';
-  if (pct >= 25) return 'rgba(245,158,11,0.1)';
-  return 'rgba(239,68,68,0.1)';
+  if (pct >= 90) return 'rgba(16,185,129,0.40)';
+  if (pct >= 70) return 'rgba(16,185,129,0.22)';
+  if (pct >= 50) return 'rgba(245,158,11,0.22)';
+  if (pct >= 25) return 'rgba(245,158,11,0.14)';
+  return 'rgba(239,68,68,0.14)';
 }
 
 export function getHeatBorder(

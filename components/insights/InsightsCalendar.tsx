@@ -1,47 +1,14 @@
 // ============================================================================
 // INSIGHTS CALENDAR — Adaptive calendar grid for the Insights tab
 // Shows 7d (single row), 14d (multi-week), or 30d (full month) with
-// heatmap backgrounds and segmented category bars per day.
+// heatmap backgrounds and appointment dots per day.
 // ============================================================================
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { CalendarDay } from '../../types/calendar';
-import { getHeatColor, getHeatBorder, CAT_COLORS, getDayCategoryColors } from '../../utils/calendarColors';
-
-// ── Segmented bar sub-component ──
-
-function SegBar({ categories, isToday }: { categories: string[]; isToday: boolean }) {
-  if (!categories?.length) return null;
-  return (
-    <View style={segStyles.bar}>
-      {categories.map((color, i) => (
-        <View
-          key={i}
-          style={[segStyles.segment, { backgroundColor: isToday ? 'rgba(0,0,0,0.35)' : color }]}
-        />
-      ))}
-    </View>
-  );
-}
-
-const segStyles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    gap: 1,
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-    position: 'absolute',
-    bottom: 3,
-    left: 4,
-    right: 4,
-  },
-  segment: {
-    flex: 1,
-  },
-});
+import { getHeatColor, getHeatBorder } from '../../utils/calendarColors';
 
 // ── Day headers ──
 
@@ -138,12 +105,7 @@ export function InsightsCalendar({ timeRange, calendarDays }: InsightsCalendarPr
     const isToday = isSameDate(date, today);
     const isFuture = date > today;
     const pct = dayData?.completionPct;
-    const cats = dayData ? getDayCategoryColors(dayData) : [];
-
-    const bgColor = isToday ? c.accent : getHeatColor(pct);
-    const borderColor = isToday
-      ? c.accent
-      : getHeatBorder(pct, c.glassBorder);
+    const hasAppt = dayData?.hasAppointment;
 
     return (
       <View
@@ -151,52 +113,29 @@ export function InsightsCalendar({ timeRange, calendarDays }: InsightsCalendarPr
         style={[
           styles.cell,
           {
-            backgroundColor: bgColor,
-            borderColor,
-            borderWidth: 1,
-            opacity: isFuture ? 0.3 : 1,
+            backgroundColor: isToday ? c.accent : getHeatColor(pct),
+            opacity: isFuture ? 0.25 : 1,
           },
+          isToday && [styles.cellToday, { borderColor: c.accent }],
         ]}
       >
         <Text
           style={[
             styles.cellDate,
             {
-              color: isToday ? '#fff' : c.textSecondary,
+              color: isToday ? '#fff' : pct != null && pct >= 0 ? c.textPrimary : c.textMuted,
               fontWeight: isToday ? '700' : '400',
             },
           ]}
         >
           {date.getDate()}
         </Text>
-        {timeRange === 7 && pct !== undefined && !isFuture && (
-          <Text style={[styles.cellPct, { color: c.textMuted }]}>
-            {Math.round(pct)}%
-          </Text>
+        {hasAppt && (
+          <View style={[styles.apptDot, { backgroundColor: isToday ? '#fff' : '#EAB308' }]} />
         )}
-        <SegBar categories={cats} isToday={isToday} />
       </View>
     );
   };
-
-  // ── Legend (single row, category bars only) ──
-  const CAT_LABELS: Record<string, string> = {
-    meds: 'Meds', vitals: 'Vitals', meals: 'Meals', wellness: 'Well.', appt: 'Appt',
-  };
-  const legend = (
-    <View style={styles.legendContainer}>
-      <View style={styles.legendRow}>
-        {Object.entries(CAT_COLORS).map(([key, color]) => (
-          <React.Fragment key={key}>
-            <View style={[styles.legendBar, { backgroundColor: color }]} />
-            <Text style={[styles.legendLabel, { color: c.textMuted }]}>
-              {CAT_LABELS[key] || key}
-            </Text>
-          </React.Fragment>
-        ))}
-      </View>
-    </View>
-  );
 
   // ── 7-day single row ──
   if (timeRange === 7) {
@@ -212,7 +151,6 @@ export function InsightsCalendar({ timeRange, calendarDays }: InsightsCalendarPr
             </View>
           ))}
         </View>
-        {legend}
       </View>
     );
   }
@@ -246,14 +184,11 @@ export function InsightsCalendar({ timeRange, calendarDays }: InsightsCalendarPr
           {week.map((date, di) => renderCell(date, wi * 7 + di))}
         </View>
       ))}
-      {legend}
     </View>
   );
 }
 
 // ── Styles ──
-
-const CELL_SIZE = 38;
 
 const styles = StyleSheet.create({
   // 7d layout
@@ -263,7 +198,7 @@ const styles = StyleSheet.create({
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 4,
+    gap: 6,
   },
   weekCellWrapper: {
     alignItems: 'center',
@@ -272,7 +207,7 @@ const styles = StyleSheet.create({
   dayLetter: {
     fontSize: 10,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 6,
     textAlign: 'center',
   },
 
@@ -292,55 +227,42 @@ const styles = StyleSheet.create({
   },
   dayHeaders: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    gap: 3,
     marginBottom: 6,
   },
   dayHeaderText: {
     fontSize: 10,
     fontWeight: '600',
-    width: CELL_SIZE,
+    flex: 1,
     textAlign: 'center',
   },
   gridRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 4,
+    gap: 3,
+    marginBottom: 3,
   },
 
   // Cell
   cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-    borderRadius: 8,
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  cellToday: {
+    borderRadius: 22,
+    borderWidth: 2,
   },
   cellDate: {
-    fontSize: 13,
+    fontSize: 15,
   },
-  cellPct: {
-    fontSize: 8,
-    marginTop: 1,
-  },
-
-  // Legend
-  legendContainer: {
-    marginTop: 10,
-    gap: 6,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  legendBar: {
-    width: 10,
-    height: 3,
-    borderRadius: 1.5,
-  },
-  legendLabel: {
-    fontSize: 9,
-    marginRight: 4,
+  apptDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    position: 'absolute',
+    bottom: 4,
   },
 });

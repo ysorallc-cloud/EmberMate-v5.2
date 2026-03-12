@@ -177,9 +177,6 @@ async function generateWatchItems(
             severity: 'watch',
             relatedTypes: ['meds'],
             whyItMatters: 'Consistent medication timing is important for effectiveness. Missing multiple doses may need a schedule adjustment.',
-            actions: [
-              { label: 'View Schedule', icon: '\uD83D\uDCCB', route: '/care-plan' },
-            ],
           });
         }
       }
@@ -205,10 +202,6 @@ async function generateWatchItems(
           severity: 'watch',
           relatedTypes: ['vitals'],
           whyItMatters: 'Keeping blood pressure under 130/80 reduces risk of heart attack and stroke. Bring this up at the next provider visit.',
-          actions: [
-            { label: 'Log Reading', icon: '\uD83D\uDCCA', route: '/log-vitals' },
-            { label: 'Visit Prep', icon: '\uD83D\uDCCB', route: '/provider-prep' },
-          ],
         });
       }
     } catch {}
