@@ -1,23 +1,22 @@
 // ============================================================================
-// PATIENT SWITCHER MODAL
-// Bottom sheet for quick patient switching from Now tab
+// PATIENT INFO MODAL
+// Bottom sheet showing active patient details with link to full profile
 // ============================================================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Modal,
-  TextInput,
-  Alert,
 } from 'react-native';
 import { Colors } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { usePatient } from '../../contexts/PatientContext';
-import { checkFeatureAccess } from '../../utils/featureGate';
 import { navigate } from '../../lib/navigate';
+import { safeGetItem } from '../../utils/safeStorage';
+import { StorageKeys } from '../../utils/storageKeys';
 
 interface PatientSwitcherModalProps {
   visible: boolean;
@@ -27,42 +26,34 @@ interface PatientSwitcherModalProps {
 export function PatientSwitcherModal({ visible, onClose }: PatientSwitcherModalProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { activePatient } = usePatient();
 
-  const { activePatientId, patients, switchPatient, addPatient, loading } = usePatient();
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [age, setAge] = useState<string | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
+  const [language, setLanguage] = useState<string | null>(null);
 
-  const handleSwitch = async (patientId: string) => {
-    if (patientId === activePatientId) {
-      onClose();
-      return;
+  useEffect(() => {
+    if (visible) {
+      Promise.all([
+        safeGetItem<string | null>(StorageKeys.PATIENT_AGE, null),
+        safeGetItem<string | null>(StorageKeys.PATIENT_GENDER, null),
+        safeGetItem<string | null>(StorageKeys.PATIENT_LANGUAGE, null),
+      ]).then(([a, g, l]) => {
+        setAge(a);
+        setGender(g);
+        setLanguage(l);
+      });
     }
-    try {
-      await switchPatient(patientId);
-      onClose();
-    } catch {
-      Alert.alert('Error', 'Failed to switch patient');
-    }
-  };
+  }, [visible]);
 
-  const handleAdd = async () => {
-    const trimmed = newName.trim();
-    if (!trimmed) return;
+  const name = activePatient?.name || 'Patient';
+  const relationship = activePatient?.relationship;
 
-    setAdding(true);
-    try {
-      const patient = await addPatient(trimmed);
-      await switchPatient(patient.id);
-      setNewName('');
-      setShowAdd(false);
-      onClose();
-    } catch (error: any) {
-      Alert.alert('Cannot Add Patient', error?.message || 'Failed to add patient');
-    } finally {
-      setAdding(false);
-    }
-  };
+  // Build summary details
+  const details: string[] = [];
+  if (age) details.push(age);
+  if (gender) details.push(gender);
+  if (language) details.push(language);
 
   return (
     <Modal
@@ -78,98 +69,41 @@ export function PatientSwitcherModal({ visible, onClose }: PatientSwitcherModalP
       >
         <TouchableOpacity activeOpacity={1} style={styles.sheet}>
           <View style={styles.handle} />
-          <Text style={styles.title}>Switch Patient</Text>
 
-          {/* Patient list */}
-          {patients.map((patient) => {
-            const isActive = patient.id === activePatientId;
-            return (
-              <TouchableOpacity
-                key={patient.id}
-                style={[styles.patientRow, isActive && styles.patientRowActive]}
-                onPress={() => handleSwitch(patient.id)}
-                accessibilityLabel={`Switch to ${patient.name}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
-              >
-                <View style={[styles.avatar, isActive && styles.avatarActive]}>
-                  <Text style={styles.avatarText}>
-                    {patient.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.patientInfo}>
-                  <Text style={[styles.patientName, isActive && styles.patientNameActive]}>
-                    {patient.name}
-                  </Text>
-                  {patient.relationship && (
-                    <Text style={styles.patientRelation}>{patient.relationship}</Text>
-                  )}
-                </View>
-                {isActive && <Text style={styles.activeCheck}>{'\u2713'}</Text>}
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Add patient */}
-          {showAdd ? (
-            <View style={styles.addForm}>
-              <TextInput
-                style={styles.addInput}
-                value={newName}
-                onChangeText={setNewName}
-                placeholder="Patient name"
-                placeholderTextColor={colors.textPlaceholder}
-                autoFocus
-                accessibilityLabel="New patient name"
-              />
-              <View style={styles.addActions}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => { setShowAdd(false); setNewName(''); }}
-                >
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.addButton, (!newName.trim() || adding) && styles.addButtonDisabled]}
-                  onPress={handleAdd}
-                  disabled={!newName.trim() || adding}
-                >
-                  <Text style={styles.addButtonText}>
-                    {adding ? 'Adding...' : 'Add'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+          {/* Patient avatar + name */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarLarge}>
+              <Text style={styles.avatarLargeText}>
+                {name.charAt(0).toUpperCase()}
+              </Text>
             </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addPatientRow}
-              onPress={async () => {
-                const result = await checkFeatureAccess('multi_patient');
-                if (!result.allowed) {
-                  Alert.alert('Patient Limit Reached', 'You have reached the maximum number of patients (10).');
-                  return;
-                }
-                setShowAdd(true);
-              }}
-              accessibilityLabel="Add a new patient"
-              accessibilityRole="button"
-            >
-              <Text style={styles.addIcon}>+</Text>
-              <Text style={styles.addLabel}>Add Patient</Text>
-            </TouchableOpacity>
+            <Text style={styles.patientName}>{name}</Text>
+            {relationship && (
+              <Text style={styles.relationship}>
+                {relationship.charAt(0).toUpperCase() + relationship.slice(1)}
+              </Text>
+            )}
+          </View>
+
+          {/* Details row */}
+          {details.length > 0 && (
+            <View style={styles.detailsRow}>
+              {details.map((detail, i) => (
+                <View key={i} style={styles.detailChip}>
+                  <Text style={styles.detailText}>{detail}</Text>
+                </View>
+              ))}
+            </View>
           )}
 
-          {/* View Profile link */}
-          <View style={styles.profileDivider} />
+          {/* View Full Profile button */}
           <TouchableOpacity
-            style={styles.profileRow}
+            style={styles.profileBtn}
             onPress={() => { onClose(); navigate('/patient'); }}
-            accessibilityLabel="View patient profile"
+            accessibilityLabel="View full patient profile"
             accessibilityRole="button"
           >
-            <Text style={styles.profileIcon}>{'\uD83D\uDC64'}</Text>
-            <Text style={styles.profileLabel}>View Profile</Text>
-            <Text style={styles.profileArrow}>{'\u2192'}</Text>
+            <Text style={styles.profileBtnText}>View Full Profile ›</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -196,144 +130,64 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     borderRadius: 2,
     backgroundColor: c.glassBorder,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: c.textPrimary,
-    marginBottom: 16,
-  },
-  patientRow: {
-    flexDirection: 'row',
+  profileSection: {
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 16,
+  },
+  avatarLarge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: c.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  avatarLargeText: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  patientName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: c.textPrimary,
+    marginBottom: 4,
+  },
+  relationship: {
+    fontSize: 13,
+    color: c.textMuted,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  detailChip: {
     backgroundColor: c.glass,
     borderWidth: 1,
     borderColor: c.glassBorder,
-    gap: 12,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  patientRowActive: {
-    backgroundColor: c.accentHint,
-    borderColor: c.accent,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: c.glassSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarActive: {
-    backgroundColor: c.accent,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: c.textPrimary,
-  },
-  patientInfo: {
-    flex: 1,
-  },
-  patientName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: c.textPrimary,
-  },
-  patientNameActive: {
-    color: c.accent,
-  },
-  patientRelation: {
+  detailText: {
     fontSize: 12,
-    color: c.textMuted,
-    marginTop: 2,
+    color: c.textSecondary,
   },
-  activeCheck: {
-    fontSize: 16,
-    color: c.accent,
-    fontWeight: 'bold',
-  },
-  addPatientRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 12,
-    marginTop: 4,
-  },
-  addIcon: {
-    fontSize: 20,
-    color: c.accent,
-    fontWeight: '600',
-  },
-  addLabel: {
-    fontSize: 15,
-    color: c.accent,
-    fontWeight: '500',
-  },
-  addForm: {
-    marginTop: 8,
-    gap: 12,
-  },
-  addInput: {
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    color: c.textPrimary,
-  },
-  addActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-  },
-  cancelButton: {
-    padding: 10,
-  },
-  cancelText: {
-    fontSize: 14,
-    color: c.textMuted,
-  },
-  addButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  profileBtn: {
     backgroundColor: c.accent,
-    borderRadius: 8,
-  },
-  addButtonDisabled: {
-    opacity: 0.4,
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: c.textPrimary,
-  },
-  profileDivider: {
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-    marginTop: 8,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 12,
     paddingVertical: 14,
-    gap: 6,
+    alignItems: 'center',
   },
-  profileIcon: {
-    fontSize: 13,
-  },
-  profileLabel: {
-    fontSize: 14,
-    color: c.accent,
-    fontWeight: '500',
-  },
-  profileArrow: {
-    fontSize: 13,
-    color: c.accent,
+  profileBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

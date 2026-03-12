@@ -76,7 +76,12 @@ export function WhatsHappenedSection({ brief, SectionHeaderRow, sectionStyles }:
     <>
       {historyExpanded ? (
         <>
-          <SectionHeaderRow title="What's Happened" styles={sectionStyles} />
+          <SectionHeaderRow
+            title="What's Happened"
+            collapsed={false}
+            onToggleCollapse={() => setHistoryExpanded(false)}
+            styles={sectionStyles}
+          />
           <View style={sectionStyles.sectionCard}>
             {handoffNotes.map((item, i) => (
               <View key={`handoff-${i}`} style={styles.handoffRow}>

@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { navigate } from '../../lib/navigate';
 import { CareBrief } from '../../utils/careSummaryBuilder';
 import { CareTasksState } from '../../hooks/useCareTasks';
+import { BucketType } from '../../types/carePlanConfig';
 
 interface BeforeBedItem { icon: string; text: string; route: string; }
 
@@ -11,6 +12,7 @@ function buildBeforeBedItems(
   careTasksState: CareTasksState | null,
   brief: CareBrief,
   patientGender: string | null,
+  enabledBuckets: BucketType[],
 ): BeforeBedItem[] {
   const items: BeforeBedItem[] = [];
   const seenRoutes = new Set<string>();
@@ -36,7 +38,7 @@ function buildBeforeBedItems(
     }
   }
 
-  if (!brief.sleep.logged) {
+  if (enabledBuckets.includes('sleep') && !brief.sleep.logged) {
     const pronoun = patientGender?.toLowerCase() === 'male' ? 'he'
       : patientGender?.toLowerCase() === 'female' ? 'she' : 'they';
     const sleepRoute = '/log-sleep';
@@ -48,12 +50,14 @@ function buildBeforeBedItems(
 
   if (seenLabels.has('evening wellness check')) return items;
 
-  const hasEvening = brief.mood.eveningWellness != null;
-  if (!hasEvening && new Date().getHours() >= 17) {
-    const wellnessRoute = '/log-evening-wellness';
-    if (!seenRoutes.has(wellnessRoute)) {
-      seenRoutes.add(wellnessRoute);
-      items.push({ icon: '📋', text: 'Evening wellness check', route: wellnessRoute });
+  if (enabledBuckets.includes('wellness')) {
+    const hasEvening = brief.mood.eveningWellness != null;
+    if (!hasEvening && new Date().getHours() >= 17) {
+      const wellnessRoute = '/log-evening-wellness';
+      if (!seenRoutes.has(wellnessRoute)) {
+        seenRoutes.add(wellnessRoute);
+        items.push({ icon: '📋', text: 'Evening wellness check', route: wellnessRoute });
+      }
     }
   }
 
@@ -64,16 +68,17 @@ interface BeforeBedSectionProps {
   brief: CareBrief;
   careTasksState: CareTasksState | null;
   patientGender: string | null;
+  enabledBuckets: BucketType[];
   SectionHeaderRow: React.ComponentType<any>;
   sectionStyles: any;
 }
 
-export function BeforeBedSection({ brief, careTasksState, patientGender, SectionHeaderRow, sectionStyles }: BeforeBedSectionProps) {
+export function BeforeBedSection({ brief, careTasksState, patientGender, enabledBuckets, SectionHeaderRow, sectionStyles }: BeforeBedSectionProps) {
   const { colors } = useTheme();
 
   if (new Date().getHours() < 17) return null;
 
-  const bedItems = buildBeforeBedItems(careTasksState, brief, patientGender);
+  const bedItems = buildBeforeBedItems(careTasksState, brief, patientGender, enabledBuckets);
   if (bedItems.length === 0) return null;
 
   const styles = createStyles(colors);

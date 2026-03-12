@@ -656,6 +656,7 @@ export default function NowScreen() {
 
     const timeLabel = appt.time
       ? (() => {
+          if (/[AP]M/i.test(appt.time)) return appt.time;
           const [h, m] = appt.time.split(':');
           const hr = parseInt(h, 10);
           const minStr = m === '00' ? '' : `:${m}`;
@@ -699,12 +700,18 @@ export default function NowScreen() {
   }, [todayTimeline.completed]);
 
   // DadOrb legend items
-  const orbLegend = useMemo(() => [
-    { color: colors.accent, label: `Meds ${todayStats.meds.completed}/${todayStats.meds.total}` },
-    { color: '#67B8A7', label: `Vitals ${todayStats.vitals.completed}/${todayStats.vitals.total}` },
-    { color: colors.amber, label: `Meals ${todayStats.meals.completed}/${todayStats.meals.total}` },
-    { color: '#EC4899', label: `Check ${todayStats.wellness?.completed ?? 0}/${todayStats.wellness?.total ?? 0}` },
-  ].filter(item => !item.label.endsWith('/0')), [todayStats, colors]);
+  const orbLegend = useMemo(() => {
+    const dotColor = (completed: number, total: number, activeColor: string) =>
+      completed === total && total > 0 ? colors.green
+        : completed > 0 ? colors.amber
+        : colors.textDisabled;
+    return [
+      { color: dotColor(todayStats.meds.completed, todayStats.meds.total, colors.accent), label: `Meds ${todayStats.meds.completed}/${todayStats.meds.total}` },
+      { color: dotColor(todayStats.vitals.completed, todayStats.vitals.total, '#67B8A7'), label: `Vitals ${todayStats.vitals.completed}/${todayStats.vitals.total}` },
+      { color: dotColor(todayStats.meals.completed, todayStats.meals.total, colors.amber), label: `Meals ${todayStats.meals.completed}/${todayStats.meals.total}` },
+      { color: dotColor(todayStats.wellness?.completed ?? 0, todayStats.wellness?.total ?? 0, '#EC4899'), label: `Check ${todayStats.wellness?.completed ?? 0}/${todayStats.wellness?.total ?? 0}` },
+    ].filter(item => !item.label.endsWith('/0'));
+  }, [todayStats, colors]);
 
   // NextActionCard data — detect batch meds at same time
   const nextTask = useMemo(() => {
@@ -750,6 +757,7 @@ export default function NowScreen() {
     const dayLabel = apptDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const timeLabel = appt.time
       ? (() => {
+          if (/[AP]M/i.test(appt.time)) return appt.time;
           const [h, m] = appt.time.split(':');
           const hr = parseInt(h, 10);
           return `${hr % 12 || 12}${m === '00' ? '' : ':' + m} ${hr >= 12 ? 'PM' : 'AM'}`;
@@ -1118,12 +1126,16 @@ export default function NowScreen() {
                       w.isCurrent && !w.allDone && styles.windowRowCurrent,
                     ]}
                   >
-                    <View style={[styles.windowDot, { backgroundColor: w.allDone ? colors.green : colors.redBright }]} />
+                    <View style={[styles.windowDot, { backgroundColor: w.allDone
+                      ? colors.green
+                      : w.isCurrent
+                        ? colors.amber
+                        : colors.textDisabled }]} />
                     <Text style={[styles.windowLabel, w.isCurrent && !w.allDone && styles.windowLabelCurrent]}>
                       {w.label.toUpperCase()}
                     </Text>
                     <Text style={styles.windowStatus}>
-                      {w.allDone ? 'Complete \u2713' : `${w.pending} remaining`}
+                      {w.allDone ? 'Complete \u2713' : w.isCurrent ? `${w.pending} remaining` : `${w.total} scheduled`}
                     </Text>
                     {w.isCurrent && !w.allDone && (
                       <TouchableOpacity
@@ -1199,6 +1211,7 @@ export default function NowScreen() {
               brief={brief}
               careTasksState={careTasksState}
               patientGender={patientGender}
+              enabledBuckets={enabledBuckets}
               SectionHeaderRow={SectionHeaderRow}
               sectionStyles={styles}
             />
