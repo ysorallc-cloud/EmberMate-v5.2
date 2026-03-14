@@ -10,7 +10,7 @@ import {
   getCurrentWindowLabel,
   InsightContext,
   AIInsight,
-} from '../insightRules';
+} from '../careInsights';
 import { CarePlanTask, TaskStats } from '../../types/carePlanTask';
 import { TimeWindowLabel } from '../../types/carePlan';
 

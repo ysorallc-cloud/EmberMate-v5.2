@@ -10,7 +10,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MorningWellnessData, EveningWellnessData } from '../../types/timeline';
 import { logMeal, getLogEvents, MealEvent } from '../logEvents';
-import { generateInsights, InsightContext } from '../insightRules';
+import { generateInsights, InsightContext } from '../careInsights';
 import { CarePlanTask, TaskStats } from '../../types/carePlanTask';
 
 // ============================================================================
