@@ -68,14 +68,14 @@ export const LABEL_MAP: Record<LogEventType, string> = {
 
 export const ROUTE_MAP: Record<LogEventType, string> = {
   medDose: '/medications',
-  vitals: '/log-vitals',
-  mood: '/log-mood',
+  vitals: '/quick-log?expand=vitals',
+  mood: '/quick-log?expand=wellness',
   meal: '/log-meal',
-  hydration: '/log-water',
-  sleep: '/log-sleep',
-  symptom: '/log-symptom',
-  activity: '/log-activity',
-  note: '/log-note',
+  hydration: '/quick-log?expand=hydration',
+  sleep: '/quick-log?expand=sleep',
+  symptom: '/quick-log?expand=symptom',
+  activity: '/quick-log?expand=activity',
+  note: '/quick-log?expand=note',
   appointmentComplete: '/appointments',
 };
 

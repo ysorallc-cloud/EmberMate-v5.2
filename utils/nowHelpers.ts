@@ -140,17 +140,17 @@ export function parseTimeForDisplay(scheduledTime: string): string | null {
 export function getRouteForInstanceType(itemType: string): string {
   switch (itemType) {
     case 'medication': return '/medication-confirm';
-    case 'vitals': return '/log-vitals';
+    case 'vitals': return '/quick-log?expand=vitals';
     case 'nutrition': return '/log-meal';
-    case 'mood': return '/log-mood';
-    case 'sleep': return '/log-sleep';
-    case 'hydration': return '/log-water';
-    case 'activity': return '/log-activity';
+    case 'mood': return '/quick-log?expand=wellness';
+    case 'sleep': return '/quick-log?expand=sleep';
+    case 'hydration': return '/quick-log?expand=hydration';
+    case 'activity': return '/quick-log?expand=activity';
     case 'wellness': return '/log-morning-wellness'; // Default — caller should pass windowLabel param
     case 'appointment': return '/appointments';
     case 'custom':
     default:
-      return '/log-note';
+      return '/quick-log?expand=note';
   }
 }
 
