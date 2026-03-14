@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { navigate } from '../lib/navigate';
 import { Colors } from '../theme/theme-tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -62,6 +62,7 @@ import {
   emitBathroomEvent,
   emitMoodEvent,
   emitNoteEvent,
+  emitCareEvent,
 } from '../utils/eventEmitter';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -91,17 +92,22 @@ const MOOD_OPTIONS = [
 ];
 
 // Categories that have inline forms (no navigation needed)
-const INLINE_CATEGORIES = new Set(['hydration', 'vitals', 'meds', 'note', 'wellness', 'meals', 'sleep', 'symptom', 'bathroom']);
+const INLINE_CATEGORIES = new Set(['hydration', 'vitals', 'meds', 'note', 'wellness', 'meals', 'sleep', 'symptom', 'bathroom', 'activity', 'pain']);
+
+const ACTIVITY_TYPES = ['Walking', 'Exercise', 'Stretching', 'Gardening', 'Chores', 'Other'];
+const PAIN_LOCATIONS = ['Head', 'Chest', 'Back', 'Abdomen', 'Joints', 'Other'];
+const PAIN_CHARACTERS = ['Sharp', 'Dull', 'Aching', 'Burning'];
 
 export default function QuickLogMoreScreen() {
   const router = useRouter();
+  const { expand } = useLocalSearchParams<{ expand?: string }>();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { enabledBuckets } = useEnabledBuckets();
   const { core, more, disabled } = getFilteredOptions(enabledBuckets);
   const allEnabled = [...core, ...more];
 
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(expand || null);
   const [logStatus, setLogStatus] = useState<TodayLogStatus | null>(null);
   const [waterGlasses, setWaterGlasses] = useState(0);
 
@@ -112,6 +118,7 @@ export default function QuickLogMoreScreen() {
   const [vOxygen, setVOxygen] = useState('');
   const [vGlucose, setVGlucose] = useState('');
   const [vWeight, setVWeight] = useState('');
+  const [vTemperature, setVTemperature] = useState('');
   const [vitalsSaving, setVitalsSaving] = useState(false);
 
   // Note inline state
@@ -141,7 +148,27 @@ export default function QuickLogMoreScreen() {
 
   // Bathroom inline state
   const [bathroomType, setBathroomType] = useState<string | null>(null);
+  const [bathroomNotes, setBathroomNotes] = useState('');
   const [bathroomSaving, setBathroomSaving] = useState(false);
+
+  // Sleep notes
+  const [sleepNotes, setSleepNotes] = useState('');
+
+  // Symptom description
+  const [symptomDescription, setSymptomDescription] = useState('');
+
+  // Activity inline state
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [activityDuration, setActivityDuration] = useState('');
+  const [activityNotes, setActivityNotes] = useState('');
+  const [activitySaving, setActivitySaving] = useState(false);
+
+  // Pain inline state
+  const [painSeverity, setPainSeverity] = useState<number | null>(null);
+  const [painLocation, setPainLocation] = useState<string | null>(null);
+  const [painCharacter, setPainCharacter] = useState<string | null>(null);
+  const [painNotes, setPainNotes] = useState('');
+  const [painSaving, setPainSaving] = useState(false);
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; undoAction?: () => void } | null>(null);
@@ -252,8 +279,9 @@ export default function QuickLogMoreScreen() {
     const o2 = vOxygen ? parseInt(vOxygen, 10) : undefined;
     const glu = vGlucose ? parseInt(vGlucose, 10) : undefined;
     const wt = vWeight ? parseFloat(vWeight) : undefined;
+    const temp = vTemperature ? parseFloat(vTemperature) : undefined;
 
-    if (!sys && !dia && !hr && !o2 && !glu && !wt) return;
+    if (!sys && !dia && !hr && !o2 && !glu && !wt && !temp) return;
 
     setVitalsSaving(true);
     try {
@@ -266,6 +294,7 @@ export default function QuickLogMoreScreen() {
       if (o2) saves.push(saveVital({ type: 'oxygen', value: o2, timestamp: ts, unit: '%' }));
       if (glu) saves.push(saveVital({ type: 'glucose', value: glu, timestamp: ts, unit: 'mg/dL' }));
       if (wt) saves.push(saveVital({ type: 'weight', value: wt, timestamp: ts, unit: 'lbs' }));
+      if (temp) saves.push(saveVital({ type: 'temperature', value: temp, timestamp: ts, unit: '°F' }));
       await Promise.all(saves);
 
       // Also save combined log
@@ -279,12 +308,12 @@ export default function QuickLogMoreScreen() {
         oxygen: o2,
       });
       emitDataUpdate(EVENT.VITALS);
-      try { await emitVitalsEvent({ systolic: sys, diastolic: dia, heartRate: hr, oxygen: o2, glucose: glu, weight: wt }, { source: 'quick_log' }); } catch {}
+      try { await emitVitalsEvent({ systolic: sys, diastolic: dia, heartRate: hr, oxygen: o2, glucose: glu, weight: wt, temperature: temp }, { source: 'quick_log' }); } catch {}
       await hapticSuccess();
       showToast('Vitals saved');
       // Clear fields
       setVSystolic(''); setVDiastolic(''); setVHeartRate('');
-      setVOxygen(''); setVGlucose(''); setVWeight('');
+      setVOxygen(''); setVGlucose(''); setVWeight(''); setVTemperature('');
     } catch (error) {
       logError('UnifiedLog.saveVitals', error);
     } finally {
@@ -374,13 +403,15 @@ export default function QuickLogMoreScreen() {
         timestamp: new Date().toISOString(),
         hours,
         quality: sleepQuality,
+        notes: sleepNotes.trim() || undefined,
       });
       emitDataUpdate(EVENT.LOGS);
-      try { await emitSleepEvent(hours, String(sleepQuality), { source: 'quick_log' }); } catch {}
+      try { await emitSleepEvent(hours, String(sleepQuality), { source: 'quick_log', notes: sleepNotes.trim() || undefined }); } catch {}
       await hapticSuccess();
       showToast('Sleep logged');
       setSleepHours('');
       setSleepQuality(null);
+      setSleepNotes('');
     } catch (error) {
       logError('UnifiedLog.saveSleep', error);
     } finally {
@@ -398,13 +429,15 @@ export default function QuickLogMoreScreen() {
         timestamp: new Date().toISOString(),
         symptoms: [trimmed],
         severity: symptomSeverity ?? undefined,
+        description: symptomDescription.trim() || undefined,
       });
       emitDataUpdate(EVENT.SYMPTOMS);
-      try { await emitSymptomEvent(trimmed, symptomSeverity != null ? String(symptomSeverity) : 'unknown', { source: 'quick_log' }); } catch {}
+      try { await emitSymptomEvent(trimmed, symptomSeverity != null ? String(symptomSeverity) : 'unknown', { source: 'quick_log', description: symptomDescription.trim() || undefined }); } catch {}
       await hapticSuccess();
       showToast('Symptom logged');
       setSymptomText('');
       setSymptomSeverity(null);
+      setSymptomDescription('');
     } catch (error) {
       logError('UnifiedLog.saveSymptom', error);
     } finally {
@@ -417,19 +450,83 @@ export default function QuickLogMoreScreen() {
     setBathroomType(type);
     setBathroomSaving(true);
     try {
+      const notes = bathroomNotes.trim();
       await saveNotesLog({
         timestamp: new Date().toISOString(),
-        content: `Bathroom: ${type}`,
+        content: notes ? `Bathroom: ${type} — ${notes}` : `Bathroom: ${type}`,
       });
       emitDataUpdate(EVENT.NOTES);
-      try { await emitBathroomEvent(type, { source: 'quick_log' }); } catch {}
+      try { await emitBathroomEvent(type, { source: 'quick_log', notes: notes || undefined }); } catch {}
       await hapticSuccess();
       showToast(`Bathroom: ${type} logged`);
       setBathroomType(null);
+      setBathroomNotes('');
     } catch (error) {
       logError('UnifiedLog.saveBathroom', error);
     } finally {
       setBathroomSaving(false);
+    }
+  };
+
+  // ── Activity save ──
+  const handleSaveActivity = async () => {
+    if (selectedActivities.length === 0) return;
+    setActivitySaving(true);
+    try {
+      const duration = activityDuration ? parseInt(activityDuration, 10) : undefined;
+      const notes = activityNotes.trim();
+      await emitCareEvent('activity_logged', {
+        activities: selectedActivities,
+        duration,
+        notes: notes || undefined,
+        source: 'quick_log',
+      });
+      await saveNotesLog({
+        timestamp: new Date().toISOString(),
+        content: `Activity: ${selectedActivities.join(', ')}${duration ? ` (${duration} min)` : ''}${notes ? ` — ${notes}` : ''}`,
+      });
+      emitDataUpdate(EVENT.LOGS);
+      await hapticSuccess();
+      showToast('Activity logged');
+      setSelectedActivities([]);
+      setActivityDuration('');
+      setActivityNotes('');
+    } catch (error) {
+      logError('UnifiedLog.saveActivity', error);
+    } finally {
+      setActivitySaving(false);
+    }
+  };
+
+  // ── Pain save ──
+  const handleSavePain = async () => {
+    if (painSeverity == null) return;
+    setPainSaving(true);
+    try {
+      const notes = painNotes.trim();
+      const description = [
+        painLocation && `Location: ${painLocation}`,
+        painCharacter && `Type: ${painCharacter}`,
+        notes,
+      ].filter(Boolean).join('. ');
+      await saveSymptomLog({
+        timestamp: new Date().toISOString(),
+        symptoms: ['Pain'],
+        severity: painSeverity,
+        description: description || undefined,
+      });
+      emitDataUpdate(EVENT.SYMPTOMS);
+      try { await emitSymptomEvent('Pain', String(painSeverity), { source: 'quick_log', painLevel: painSeverity, location: painLocation, character: painCharacter }); } catch {}
+      await hapticSuccess();
+      showToast(`Pain (${painSeverity}/10) logged`);
+      setPainSeverity(null);
+      setPainLocation(null);
+      setPainCharacter(null);
+      setPainNotes('');
+    } catch (error) {
+      logError('UnifiedLog.savePain', error);
+    } finally {
+      setPainSaving(false);
     }
   };
 
@@ -448,7 +545,7 @@ export default function QuickLogMoreScreen() {
   const firstDoneIndex = sortedOptions.findIndex(o => isDone(o.id));
 
   const today = format(new Date(), 'EEEE, MMM d');
-  const hasVitalsData = vSystolic || vDiastolic || vHeartRate || vOxygen || vGlucose || vWeight;
+  const hasVitalsData = vSystolic || vDiastolic || vHeartRate || vOxygen || vGlucose || vWeight || vTemperature;
 
   // ── Render inline content per category ──
   const renderInlineContent = (option: QuickLogOption) => {
@@ -595,6 +692,24 @@ export default function QuickLogMoreScreen() {
                   <Text style={styles.fieldUnit}>lbs</Text>
                 </View>
               </View>
+            </View>
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldWrapper}>
+                <Text style={styles.fieldLabel}>TEMPERATURE</Text>
+                <View style={styles.fieldInputRow}>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={vTemperature}
+                    onChangeText={setVTemperature}
+                    placeholder="—"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                    accessibilityLabel="Temperature"
+                  />
+                  <Text style={styles.fieldUnit}>°F</Text>
+                </View>
+              </View>
+              <View style={styles.fieldWrapper} />
             </View>
             <View style={styles.saveRow}>
               <TouchableOpacity
@@ -791,6 +906,14 @@ export default function QuickLogMoreScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            <TextInput
+              style={[styles.noteInput, { marginTop: 10, minHeight: 40 }]}
+              value={sleepNotes}
+              onChangeText={setSleepNotes}
+              placeholder="Notes (optional)"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Sleep notes"
+            />
             <View style={styles.saveRow}>
               <TouchableOpacity
                 style={[styles.saveBtn, (!sleepHours || !sleepQuality || sleepSaving) && styles.saveBtnDisabled]}
@@ -829,6 +952,14 @@ export default function QuickLogMoreScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            <TextInput
+              style={[styles.noteInput, { marginTop: 10, minHeight: 40 }]}
+              value={symptomDescription}
+              onChangeText={setSymptomDescription}
+              placeholder="Additional details (optional)"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Symptom details"
+            />
             <View style={styles.saveRow}>
               <TouchableOpacity
                 style={[styles.saveBtn, (!symptomText.trim() || symptomSaving) && styles.saveBtnDisabled]}
@@ -860,12 +991,139 @@ export default function QuickLogMoreScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity
-              style={styles.detailsLink}
-              onPress={() => navigate('/log-bathroom')}
-            >
-              <Text style={styles.detailsLinkText}>Add details →</Text>
-            </TouchableOpacity>
+            <TextInput
+              style={[styles.noteInput, { marginTop: 10, minHeight: 40 }]}
+              value={bathroomNotes}
+              onChangeText={setBathroomNotes}
+              placeholder="Notes (optional)"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Bathroom notes"
+            />
+          </View>
+        );
+
+      case 'activity':
+        return (
+          <View style={styles.activitySection}>
+            <Text style={styles.fieldSectionLabel}>ACTIVITY TYPE</Text>
+            <View style={styles.mealButtons}>
+              {ACTIVITY_TYPES.map(type => {
+                const selected = selectedActivities.includes(type);
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.mealBtn, selected && styles.mealBtnActive]}
+                    onPress={() => setSelectedActivities(prev =>
+                      selected ? prev.filter(t => t !== type) : [...prev, type]
+                    )}
+                    accessibilityLabel={`${type}${selected ? ' selected' : ''}`}
+                  >
+                    <Text style={[styles.mealBtnText, selected && styles.mealBtnTextActive]}>
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldWrapper}>
+                <Text style={styles.fieldLabel}>DURATION (MINUTES)</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={activityDuration}
+                  onChangeText={setActivityDuration}
+                  placeholder="—"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="number-pad"
+                  accessibilityLabel="Duration in minutes"
+                />
+              </View>
+            </View>
+            <TextInput
+              style={[styles.noteInput, { marginTop: 10, minHeight: 40 }]}
+              value={activityNotes}
+              onChangeText={setActivityNotes}
+              placeholder="Notes (optional)"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Activity notes"
+            />
+            <View style={styles.saveRow}>
+              <TouchableOpacity
+                style={[styles.saveBtn, (selectedActivities.length === 0 || activitySaving) && styles.saveBtnDisabled]}
+                onPress={handleSaveActivity}
+                disabled={selectedActivities.length === 0 || activitySaving}
+              >
+                <Text style={styles.saveBtnText}>{activitySaving ? 'Saving...' : 'Save Activity'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+
+      case 'pain':
+        return (
+          <View style={styles.painSection}>
+            <Text style={styles.fieldSectionLabel}>SEVERITY (1-10)</Text>
+            <View style={styles.painScaleRow}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.painScaleBtn, painSeverity === n && styles.painScaleBtnActive]}
+                  onPress={() => setPainSeverity(n)}
+                  accessibilityLabel={`Pain level ${n}`}
+                >
+                  <Text style={[styles.painScaleBtnText, painSeverity === n && styles.painScaleBtnTextActive]}>
+                    {n}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={[styles.fieldSectionLabel, { marginTop: 12 }]}>LOCATION</Text>
+            <View style={styles.mealButtons}>
+              {PAIN_LOCATIONS.map(loc => (
+                <TouchableOpacity
+                  key={loc}
+                  style={[styles.mealBtn, painLocation === loc && styles.severityBtnActive]}
+                  onPress={() => setPainLocation(painLocation === loc ? null : loc)}
+                  accessibilityLabel={`Pain location: ${loc}`}
+                >
+                  <Text style={[styles.mealBtnText, painLocation === loc && styles.severityBtnTextActive]}>
+                    {loc}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={[styles.fieldSectionLabel, { marginTop: 12 }]}>TYPE</Text>
+            <View style={styles.mealButtons}>
+              {PAIN_CHARACTERS.map(ch => (
+                <TouchableOpacity
+                  key={ch}
+                  style={[styles.mealBtn, painCharacter === ch && styles.severityBtnActive]}
+                  onPress={() => setPainCharacter(painCharacter === ch ? null : ch)}
+                  accessibilityLabel={`Pain type: ${ch}`}
+                >
+                  <Text style={[styles.mealBtnText, painCharacter === ch && styles.severityBtnTextActive]}>
+                    {ch}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={[styles.noteInput, { marginTop: 10, minHeight: 40 }]}
+              value={painNotes}
+              onChangeText={setPainNotes}
+              placeholder="Notes (optional)"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Pain notes"
+            />
+            <View style={styles.saveRow}>
+              <TouchableOpacity
+                style={[styles.saveBtn, (painSeverity == null || painSaving) && styles.saveBtnDisabled]}
+                onPress={handleSavePain}
+                disabled={painSeverity == null || painSaving}
+              >
+                <Text style={styles.saveBtnText}>{painSaving ? 'Saving...' : 'Save Pain'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
@@ -1220,6 +1478,20 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
 
   // ── Bathroom ──
   bathroomSection: {},
+
+  // ── Activity ──
+  activitySection: {},
+
+  // ── Pain ──
+  painSection: {},
+  painScaleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  painScaleBtn: {
+    width: 30, height: 30, borderRadius: 15, backgroundColor: c.surface,
+    borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center',
+  },
+  painScaleBtnActive: { backgroundColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.3)' },
+  painScaleBtnText: { fontSize: 11, fontWeight: '600', color: c.textMuted },
+  painScaleBtnTextActive: { color: '#EF4444' },
 
   // Disabled section
   sectionLabel: {
