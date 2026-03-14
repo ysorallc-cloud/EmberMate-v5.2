@@ -11,14 +11,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, BorderRadius } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
-import { hasSampleData } from '../../utils/sampleDataManager';
-import { useDataListener } from '../../lib/events';
+import { clearSampleData, hasSampleData } from '../../utils/sampleDataManager';
+import { emitDataUpdate, useDataListener } from '../../lib/events';
+import { EVENT } from '../../lib/eventNames';
 import { logError } from '../../utils/devLog';
 import { StorageKeys } from '../../utils/storageKeys';
 
@@ -33,7 +34,6 @@ export const SampleDataBanner: React.FC<SampleDataBannerProps> = ({
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<'full' | 'compact'>('full');
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -88,7 +88,21 @@ export const SampleDataBanner: React.FC<SampleDataBannerProps> = ({
   };
 
   const handleReady = () => {
-    router.push('/sample-data-transition');
+    Alert.alert(
+      'Remove Sample Data',
+      'This will clear all demo data and start fresh. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            await clearSampleData();
+            emitDataUpdate(EVENT.SAMPLE_DATA_CLEARED);
+          },
+        },
+      ]
+    );
   };
 
   if (!visible) {

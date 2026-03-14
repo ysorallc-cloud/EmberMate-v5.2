@@ -296,14 +296,6 @@ export default function CaregiverManagementScreen() {
                 </Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.viewActivityButton}
-                onPress={() => router.push('/family-activity')}
-                accessibilityLabel="View all activity"
-                accessibilityRole="link"
-              >
-                <Text style={styles.viewActivityText}>View All Activity →</Text>
-              </TouchableOpacity>
             </View>
           </View>
 

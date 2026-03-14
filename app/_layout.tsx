@@ -244,7 +244,6 @@ function RootLayout() {
           <Stack.Screen name="log-medication-plan-item" />
           <Stack.Screen name="vital-threshold-settings" />
           <Stack.Screen name="patient" />
-          <Stack.Screen name="today-scope" />
           <Stack.Screen name="data-privacy-settings" />
           <Stack.Screen name="correlation-report" />
           <Stack.Screen name="log-note" />
