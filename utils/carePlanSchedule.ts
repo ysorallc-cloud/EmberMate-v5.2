@@ -38,7 +38,7 @@ export interface ScheduleDerivationInputs {
 // ============================================================================
 
 /**
- * Derive unified schedule entries from CarePlan dayState and appointments
+ * Derive unified schedule entries from CarePlan DayState and appointments
  * This is the SINGLE SOURCE OF TRUTH for the Care Plan Schedule
  *
  * Rules:
