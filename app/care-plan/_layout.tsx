@@ -18,7 +18,6 @@ export default function CarePlanLayout() {
       <Stack.Screen name="sleep" />
       <Stack.Screen name="symptoms" />
       <Stack.Screen name="activity" />
-      <Stack.Screen name="manage" />
     </Stack>
   );
 }
