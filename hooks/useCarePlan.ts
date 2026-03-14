@@ -23,7 +23,6 @@ import {
   updateCarePlan as updateCarePlanStorage,
 } from '../utils/carePlanStorage';
 
-// Inlined from deprecated deriveDayState.ts
 export interface DataIntegrityWarning {
   type: 'missing_medication' | 'missing_appointment' | 'orphaned_item';
   routineId: string;
