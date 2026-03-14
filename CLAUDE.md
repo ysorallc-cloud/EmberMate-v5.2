@@ -1,5 +1,15 @@
 # EmberMate — Claude Code Project Guide
 
+## Git safety — MANDATORY
+
+1. NEVER modify more than 3 files without committing first
+2. Before ANY file deletion, run: git add -A && git commit -m "checkpoint before [task]"
+3. After completing any task, run: git add -A && git commit -m "[description]" && git push origin main
+4. NEVER proceed to the next step of a multi-step task without committing and pushing
+5. If a test fails, STOP. Do not attempt to fix cascading failures. Commit what works, report what failed.
+6. NEVER run more than one phase or step from an instructions document in a single session
+7. When asked to execute a multi-step document, execute ONLY the first step, commit, push, and stop. Wait for explicit approval before proceeding to the next step.
+
 ## Stack
 - **Framework:** React Native 0.76.9 with Expo SDK 52 (expo-router v4)
 - **Language:** TypeScript (strict mode)
