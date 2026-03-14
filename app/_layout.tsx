@@ -227,13 +227,9 @@ function RootLayout() {
           <Stack.Screen name="appointments" />
           <Stack.Screen name="emergency" />
           <Stack.Screen name="upgrade" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="log-vitals" />
-          <Stack.Screen name="log-water" />
           <Stack.Screen name="log-meal" />
           <Stack.Screen name="log-morning-wellness" />
           <Stack.Screen name="log-evening-wellness" />
-          <Stack.Screen name="log-symptom" />
-          <Stack.Screen name="log-pain" />
           <Stack.Screen name="care-report" />
           <Stack.Screen name="provider-prep" />
           <Stack.Screen name="family-sharing" />
@@ -246,15 +242,10 @@ function RootLayout() {
           <Stack.Screen name="patient" />
           <Stack.Screen name="data-privacy-settings" />
           <Stack.Screen name="correlation-report" />
-          <Stack.Screen name="log-note" />
           <Stack.Screen name="appointment-confirmation" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="medication-confirm" />
-          <Stack.Screen name="log-mood" />
-          <Stack.Screen name="log-sleep" />
-          <Stack.Screen name="log-activity" />
           <Stack.Screen name="quick-log" />
-          <Stack.Screen name="log-bathroom" />
           <Stack.Screen name="guide-hub" />
           <Stack.Screen name="hub" />
         </Stack>
