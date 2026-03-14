@@ -132,7 +132,7 @@ function generateMorningRoutine(): CarePlanRoutine {
         emoji: '📊',
         target: 1,
         completionRule: 'derived',
-        link: '/log-vitals',
+        link: '/quick-log?expand=vitals',
         metadata: {
           vitalTypes: ['systolic', 'diastolic', 'glucose', 'heartRate'],
         },
@@ -183,7 +183,7 @@ function generateMiddayRoutine(): CarePlanRoutine {
         emoji: '💧',
         target: 4,  // 4 glasses by midday
         completionRule: 'derived',
-        link: '/log-water',
+        link: '/quick-log?expand=hydration',
       },
       {
         id: 'lunch',
@@ -204,7 +204,7 @@ function generateMiddayRoutine(): CarePlanRoutine {
         emoji: '🚶',
         target: 1,
         completionRule: 'manual',
-        link: '/log-activity',
+        link: '/quick-log?expand=activity',
       },
     ],
   };
@@ -282,7 +282,7 @@ function generateBedtimeRoutine(): CarePlanRoutine {
         emoji: '😴',
         target: 1,
         completionRule: 'manual',
-        link: '/log-sleep',
+        link: '/quick-log?expand=sleep',
       },
       {
         id: 'evening-hydration',
@@ -291,7 +291,7 @@ function generateBedtimeRoutine(): CarePlanRoutine {
         emoji: '💧',
         target: 8,  // Total for day
         completionRule: 'derived',
-        link: '/log-water',
+        link: '/quick-log?expand=hydration',
       },
     ],
   };
@@ -328,7 +328,7 @@ function generateMorningRoutineVitalsFocused(): CarePlanRoutine {
         emoji: '🩺',
         target: 1,
         completionRule: 'derived',
-        link: '/log-vitals',
+        link: '/quick-log?expand=vitals',
         metadata: { vitalTypes: ['systolic', 'diastolic'] },
       },
       {
@@ -338,7 +338,7 @@ function generateMorningRoutineVitalsFocused(): CarePlanRoutine {
         emoji: '🩸',
         target: 1,
         completionRule: 'derived',
-        link: '/log-vitals',
+        link: '/quick-log?expand=vitals',
         metadata: { vitalTypes: ['glucose'] },
       },
       {
@@ -348,7 +348,7 @@ function generateMorningRoutineVitalsFocused(): CarePlanRoutine {
         emoji: '⚖️',
         target: 1,
         completionRule: 'derived',
-        link: '/log-vitals',
+        link: '/quick-log?expand=vitals',
         metadata: { vitalTypes: ['weight'] },
       },
       {
@@ -392,7 +392,7 @@ function generateEveningRoutineVitalsFocused(): CarePlanRoutine {
         emoji: '🩺',
         target: 1,
         completionRule: 'derived',
-        link: '/log-vitals',
+        link: '/quick-log?expand=vitals',
         metadata: { vitalTypes: ['systolic', 'diastolic'] },
       },
       {
@@ -440,7 +440,7 @@ function generateMorningRoutineMedHeavy(): CarePlanRoutine {
         emoji: '📊',
         target: 1,
         completionRule: 'derived',
-        link: '/log-vitals',
+        link: '/quick-log?expand=vitals',
       },
       {
         id: 'breakfast',
@@ -560,7 +560,7 @@ function generateBedtimeRoutineMedHeavy(): CarePlanRoutine {
         emoji: '😴',
         target: 1,
         completionRule: 'manual',
-        link: '/log-sleep',
+        link: '/quick-log?expand=sleep',
       },
     ],
   };
@@ -611,7 +611,7 @@ export const ITEM_TYPE_OPTIONS: ItemTypeOption[] = [
     emoji: '📊',
     defaultTarget: 1,
     targetType: 'done',
-    link: '/log-vitals',
+    link: '/quick-log?expand=vitals',
     description: 'Blood pressure, glucose, weight',
   },
   {
@@ -629,7 +629,7 @@ export const ITEM_TYPE_OPTIONS: ItemTypeOption[] = [
     emoji: '💧',
     defaultTarget: 8,
     targetType: 'count',
-    link: '/log-water',
+    link: '/quick-log?expand=hydration',
     description: 'Water intake (glasses)',
   },
   {
@@ -647,7 +647,7 @@ export const ITEM_TYPE_OPTIONS: ItemTypeOption[] = [
     emoji: '🚶',
     defaultTarget: 1,
     targetType: 'done',
-    link: '/log-activity',
+    link: '/quick-log?expand=activity',
     description: 'Physical therapy or exercise',
   },
   {
@@ -656,7 +656,7 @@ export const ITEM_TYPE_OPTIONS: ItemTypeOption[] = [
     emoji: '📝',
     defaultTarget: 1,
     targetType: 'done',
-    link: '/log-note',
+    link: '/quick-log?expand=note',
     description: 'General observations',
   },
 ];

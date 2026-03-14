@@ -37,7 +37,7 @@ export function CaregiverZone({ completedCount, skippedCount, onPause }: Caregiv
         {/* Notes */}
         <TouchableOpacity
           style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
-          onPress={() => navigate('/log-note')}
+          onPress={() => navigate('/quick-log?expand=note')}
           activeOpacity={0.7}
           accessibilityLabel="Add a note"
           accessibilityRole="button"

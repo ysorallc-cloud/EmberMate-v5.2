@@ -67,7 +67,7 @@ export const BUCKET_META: Record<BucketType, BucketMeta> = {
     name: 'Vitals',
     emoji: '\uD83D\uDCCA',
     aiInsight: 'Makes trends visible over time, even when readings look fine day to day.',
-    route: '/log-vitals',
+    route: '/quick-log?expand=vitals',
   },
   meals: {
     type: 'meals',
@@ -81,21 +81,21 @@ export const BUCKET_META: Record<BucketType, BucketMeta> = {
     name: 'Water',
     emoji: '\uD83D\uDCA7',
     aiInsight: 'Supports hydration goals and explains fatigue or headaches.',
-    route: '/log-water',
+    route: '/quick-log?expand=hydration',
   },
   sleep: {
     type: 'sleep',
     name: 'Sleep',
     emoji: '\uD83D\uDE34',
     aiInsight: 'Links rest quality to symptoms and energy.',
-    route: '/log-sleep',
+    route: '/quick-log?expand=sleep',
   },
   activity: {
     type: 'activity',
     name: 'Activity',
     emoji: '\uD83D\uDEB6',
     aiInsight: 'Shows how movement connects to energy, mood, and overall wellness.',
-    route: '/log-activity',
+    route: '/quick-log?expand=activity',
   },
   wellness: {
     type: 'wellness',
