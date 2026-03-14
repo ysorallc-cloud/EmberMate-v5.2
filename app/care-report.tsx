@@ -41,8 +41,7 @@ import { StorageKeys } from '../utils/storageKeys';
 import { getTodayDateString } from '../services/carePlanGenerator';
 
 // Report utilities
-import { buildCareBrief, CareBrief } from '../utils/careSummaryBuilder';
-import { generateComprehensiveReport } from '../utils/reportGenerator';
+import { buildCareBrief, CareBrief, generateComprehensiveReport } from '../utils/careSummaryBuilder';
 import { generateAndSharePDF, ReportData as PdfReportData, PatientInfo } from '../utils/pdfExport';
 import { getAllInsights, InsightData } from '../utils/insightEngine';
 import { buildProviderPrep, ProviderPrepData } from '../utils/providerPrepBuilder';
