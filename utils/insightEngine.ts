@@ -1100,10 +1100,10 @@ async function generatePatterns(
           id: `pattern-${corr.id || Date.now()}`,
           icon: '\uD83D\uDD0D',
           category: 'pattern',
-          title: corr.title || 'Pattern noticed',
-          body: corr.description || corr.summary || 'A correlation was detected.',
+          title: `${corr.variable1} & ${corr.variable2}`,
+          body: corr.insight || 'A correlation was detected.',
           severity: 'info',
-          relatedTypes: corr.types || [],
+          relatedTypes: [corr.variable1, corr.variable2],
         });
       }
     }
