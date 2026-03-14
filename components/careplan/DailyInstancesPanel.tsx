@@ -201,14 +201,6 @@ export function DailyInstancesPanel({
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.adjustTodayButton}
-            onPress={() => navigate('/today-scope')}
-            accessibilityLabel="Adjust today's care plan"
-            accessibilityRole="button"
-          >
-            <Text style={styles.adjustTodayText}>Adjust Today</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => navigate('/care-plan')}
             accessibilityLabel="Care plan settings"

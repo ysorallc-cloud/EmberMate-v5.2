@@ -234,14 +234,6 @@ export default function FamilySharingScreen() {
               <Text style={styles.primaryButtonText}>+ Generate Invite Code</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => router.push('/family-activity')}
-              accessibilityLabel="View family activity"
-              accessibilityRole="button"
-            >
-              <Text style={styles.secondaryButtonText}>View Family Activity →</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Info */}
