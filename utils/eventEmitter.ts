@@ -9,7 +9,7 @@ import { logError } from './devLog';
 
 const DEFAULT_PATIENT = 'default';
 
-async function emit(
+export async function emitCareEvent(
   type: EventType,
   opts: {
     value?: number | string;
@@ -34,21 +34,23 @@ async function emit(
     });
   } catch (err) {
     // Non-blocking — don't break the existing save flow
-    logError('eventEmitter.emit', err);
+    logError('eventEmitter.emitCareEvent', err);
   }
 }
 
 // ============================================================================
 // TYPE-SPECIFIC EMITTERS
+// These delegate to emitCareEvent. Use emitCareEvent directly for new code.
 // ============================================================================
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitMedicationEvent(
   medicationId: string,
   medicationName: string,
   status: 'taken' | 'skipped',
   opts?: { dosage?: string; timestamp?: string; source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit(status === 'taken' ? 'medication_taken' : 'medication_skipped', {
+  await emitCareEvent(status === 'taken' ? 'medication_taken' : 'medication_skipped', {
     status: status === 'taken' ? 'completed' : 'skipped',
     metadata: { medicationId, medicationName, dosage: opts?.dosage },
     source: opts?.source,
@@ -56,111 +58,121 @@ export async function emitMedicationEvent(
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitVitalsEvent(
   vitalsData: Record<string, unknown>,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('vitals_recorded', {
+  await emitCareEvent('vitals_recorded', {
     metadata: vitalsData,
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitMealEvent(
   mealType: string,
   opts?: { quality?: string; notes?: string; source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('meal_logged', {
+  await emitCareEvent('meal_logged', {
     metadata: { mealType, quality: opts?.quality },
     notes: opts?.notes,
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitHydrationEvent(
   glasses: number,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('hydration_logged', {
+  await emitCareEvent('hydration_logged', {
     value: glasses,
     metadata: { glasses },
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitSleepEvent(
   hours: number,
   quality: string,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('sleep_logged', {
+  await emitCareEvent('sleep_logged', {
     value: hours,
     metadata: { hours, quality },
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitSymptomEvent(
   symptomName: string,
   severity: string,
   opts?: { notes?: string; source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('symptom_reported', {
+  await emitCareEvent('symptom_reported', {
     metadata: { symptomName, severity },
     notes: opts?.notes,
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitBathroomEvent(
   bathroomType: string,
   opts?: { notes?: string; source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('bathroom_event', {
+  await emitCareEvent('bathroom_event', {
     metadata: { bathroomType },
     notes: opts?.notes,
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitMoodEvent(
   score: number,
   label: string,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('mood_logged', {
+  await emitCareEvent('mood_logged', {
     value: score,
     metadata: { score, label },
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitWellnessEvent(
   checkType: 'morning' | 'evening',
   responses: Record<string, unknown>,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('wellness_check', {
+  await emitCareEvent('wellness_check', {
     metadata: { checkType, responses },
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitNoteEvent(
   noteText: string,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('note_added', {
+  await emitCareEvent('note_added', {
     notes: noteText,
     source: opts?.source,
   });
 }
 
+/** @deprecated Use emitCareEvent() directly */
 export async function emitActivityEvent(
   activityData: Record<string, unknown>,
   opts?: { source?: CareEvent['source'] }
 ): Promise<void> {
-  await emit('activity_logged', {
+  await emitCareEvent('activity_logged', {
     metadata: activityData,
     source: opts?.source,
   });
