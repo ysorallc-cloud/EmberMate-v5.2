@@ -169,32 +169,20 @@ describe('Flow 2: Log Medication Dose', () => {
 // FLOW 3: Log Vitals — Now tab -> log-vitals -> back
 // ============================================================================
 
-describe('Flow 3: Log Vitals', () => {
-  it('nowHelpers.getRouteForInstanceType maps vitals to /log-vitals', () => {
+describe('Flow 3: Log Vitals (now via quick-log)', () => {
+  it('nowHelpers.getRouteForInstanceType maps vitals to /quick-log?expand=vitals', () => {
     const source = readSource('utils/nowHelpers.ts');
-    // Verify the route mapping
-    expect(source).toContain("case 'vitals': return '/log-vitals'");
+    expect(source).toContain("case 'vitals': return '/quick-log?expand=vitals'");
   });
 
-  it('log-vitals.tsx exists as a route', () => {
-    expect(routeFileExists('log-vitals')).toBe(true);
+  it('quick-log.tsx exists as a route', () => {
+    expect(routeFileExists('quick-log')).toBe(true);
   });
 
-  it('log-vitals.tsx dual-writes to vitalsStorage AND centralStorage', () => {
-    const source = readSource('app/log-vitals.tsx');
-    expect(source).toContain('saveVital');
-    expect(source).toContain("from '../utils/vitalsStorage'");
+  it('quick-log.tsx handles vitals expand param', () => {
+    const source = readSource('app/quick-log.tsx');
+    expect(source).toContain("case 'vitals'");
     expect(source).toContain('saveVitalsLog');
-    expect(source).toContain("from '../utils/centralStorage'");
-  });
-
-  it('log-vitals.tsx saves individual vital readings (not aggregated)', () => {
-    const source = readSource('app/log-vitals.tsx');
-    // Each vital type is saved individually to vitalsStorage
-    expect(source).toContain("type: 'systolic'");
-    expect(source).toContain("type: 'diastolic'");
-    expect(source).toContain("type: 'glucose'");
-    expect(source).toContain("type: 'weight'");
   });
 
   it('today.tsx reads vitals from centralStorage for legacy stats', () => {
@@ -328,15 +316,15 @@ describe('Flow 6: Onboarding -> First Use', () => {
 describe('Route completeness: getRouteForInstanceType', () => {
   const routeMap: Record<string, string> = {
     medication: '/medication-confirm',
-    vitals: '/log-vitals',
+    vitals: '/quick-log',
     nutrition: '/log-meal',
-    mood: '/log-mood',
-    sleep: '/log-sleep',
-    hydration: '/log-water',
-    activity: '/log-activity',
+    mood: '/quick-log',
+    sleep: '/quick-log',
+    hydration: '/quick-log',
+    activity: '/quick-log',
     wellness: '/log-morning-wellness',
     appointment: '/appointments',
-    custom: '/log-note',
+    custom: '/quick-log',
   };
 
   Object.entries(routeMap).forEach(([itemType, route]) => {

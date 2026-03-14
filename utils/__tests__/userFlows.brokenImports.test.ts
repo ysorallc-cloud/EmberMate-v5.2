@@ -126,29 +126,20 @@ describe('rhythmStorage usage in log-meal.tsx', () => {
 });
 
 // ============================================================================
-// TEST 3: rhythmStorage imports in log-vitals.tsx
+// TEST 3: quick-log.tsx handles vitals (absorbed from log-vitals.tsx)
 // ============================================================================
 
-describe('rhythmStorage usage in log-vitals.tsx', () => {
-  it('imports getTodayProgress and TodayProgress from rhythmStorage', () => {
-    const source = readSource('app/log-vitals.tsx');
-    expect(source).toContain("import { getTodayProgress, TodayProgress } from '../utils/rhythmStorage'");
+describe('quick-log.tsx vitals handling', () => {
+  it('quick-log.tsx handles vitals inline form', () => {
+    const source = readSource('app/quick-log.tsx');
+    expect(source).toContain("case 'vitals'");
+    expect(source).toContain('saveVitalsLog');
   });
 
-  it('getTodayProgress is USED in file body (not a dead import)', () => {
-    const source = readSource('app/log-vitals.tsx');
-    expect(isImportUsedInBody(source, 'getTodayProgress')).toBe(true);
-  });
-
-  it('TodayProgress is USED in file body as a type annotation', () => {
-    const source = readSource('app/log-vitals.tsx');
-    expect(isImportUsedInBody(source, 'TodayProgress')).toBe(true);
-  });
-
-  it('progress.vitals is referenced in the render output', () => {
-    const source = readSource('app/log-vitals.tsx');
-    expect(source).toContain('progress.vitals.completed');
-    expect(source).toContain('progress.vitals.expected');
+  it('quick-log.tsx reads expand param from URL', () => {
+    const source = readSource('app/quick-log.tsx');
+    expect(source).toContain('useLocalSearchParams');
+    expect(source).toContain('expand');
   });
 });
 

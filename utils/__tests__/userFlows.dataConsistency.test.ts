@@ -187,10 +187,9 @@ describe('Vitals data consistency', () => {
     //   - One entry per measurement event, all values in one object
     //   - e.g., [{systolic:120, diastolic:80, glucose:100}]
     //
-    // log-vitals.tsx dual-writes to BOTH for different consumers.
-    const logVitalsSource = readSource('app/log-vitals.tsx');
-    expect(logVitalsSource).toContain('saveVital'); // vitalsStorage
-    expect(logVitalsSource).toContain('saveVitalsLog'); // centralStorage
+    // quick-log.tsx (vitals expand) writes to centralStorage for consumers.
+    const quickLogSource = readSource('app/quick-log.tsx');
+    expect(quickLogSource).toContain('saveVitalsLog'); // centralStorage
   });
 
   it('DOCUMENTS: today.tsx reads from centralStorage for legacy stats', () => {
@@ -399,12 +398,11 @@ describe('Data source mapping', () => {
     expect(medFormSource).toContain('medicationStorage');
 
     // Vitals:
-    //   Write: log-vitals.tsx -> vitalsStorage + centralStorage
+    //   Write: quick-log.tsx (expand=vitals) -> centralStorage
     //   Read:  today.tsx -> centralStorage (getTodayVitalsLog)
     //   Read:  trends/reports -> vitalsStorage (getVitals, getVitalsByType)
-    const logVitalsSource = readSource('app/log-vitals.tsx');
-    expect(logVitalsSource).toContain('vitalsStorage');
-    expect(logVitalsSource).toContain('centralStorage');
+    const quickLogSource = readSource('app/quick-log.tsx');
+    expect(quickLogSource).toContain('centralStorage');
 
     // Appointments:
     //   Write: appointment-form.tsx -> appointmentStorage
