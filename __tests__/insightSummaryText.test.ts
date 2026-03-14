@@ -2,7 +2,7 @@ import {
   generateSummaryText,
   InsightResults,
   PeriodSummary,
-} from '../utils/insightTextGenerator';
+} from '../utils/insightEngine';
 
 describe('generateSummaryText', () => {
   const baseSummary: PeriodSummary = {

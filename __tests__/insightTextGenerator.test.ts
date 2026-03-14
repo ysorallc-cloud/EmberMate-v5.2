@@ -1,7 +1,7 @@
 import {
   generateAllInsights,
   InsightResults,
-} from '../utils/insightTextGenerator';
+} from '../utils/insightEngine';
 import { createDefaultCarePlanConfig } from '../types/carePlanConfig';
 
 // Mock instance-based storage (replaces legacy medicationStorage mock)
