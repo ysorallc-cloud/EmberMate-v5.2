@@ -16,9 +16,9 @@ import {
   DayState,
   DayStateRoutine,
   DayStateItem,
-  CarePlan,
+  RoutineCarePlan as CarePlan,
   CarePlanOverride,
-} from '../types/dayState';
+} from '../types/derived';
 import { Appointment } from './appointmentStorage';
 
 // ============================================================================
