@@ -3,7 +3,7 @@
 // Unified type for Care Plan Schedule entries from CarePlan and Appointments
 // ============================================================================
 
-import { CarePlanItemType } from './dayState';
+import { CarePlanItemType } from './carePlan';
 
 /**
  * Source of a schedule entry

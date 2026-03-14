@@ -26,8 +26,8 @@
 // ============================================================================
 
 import {
-  CarePlan,
-  CarePlanItem,
+  RoutineCarePlan as CarePlan,
+  RoutineCarePlanItem as CarePlanItem,
   CarePlanOverride,
   DayState,
   DayStateItem,
@@ -37,7 +37,7 @@ import {
   NextAction,
   RoutineStatus,
   ItemStatus,
-} from '../types/dayState';
+} from '../types/derived';
 import { Medication } from './medicationStorage';
 import { Appointment } from './appointmentStorage';
 import {

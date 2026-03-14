@@ -8,10 +8,10 @@ import { logError } from '../utils/devLog';
 import { useDataListener } from '../lib/events';
 import { getTodayDateString } from '../services/carePlanGenerator';
 import {
-  CarePlan,
+  RoutineCarePlan as CarePlan,
   DayState,
   CarePlanOverride,
-} from '../types/dayState';
+} from '../types/derived';
 import {
   getCarePlan,
   getEffectiveCarePlan,
