@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { GlassCard } from '../aurora/GlassCard';
-import type { CorrelationCard, ConfidenceLevel } from '../../utils/understandInsights';
+import type { CorrelationCard, ConfidenceLevel } from '../../utils/insightEngine';
 
 // ============================================================================
 // TYPES
