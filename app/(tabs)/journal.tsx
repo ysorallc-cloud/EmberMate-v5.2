@@ -46,6 +46,7 @@ import {
   JournalReflection,
 } from '../../utils/journalReflections';
 import { useCoffeeMoment } from '../../hooks/useCoffeeMoment';
+import { useEventRange } from '../../hooks/useEvents';
 import { CoffeeMomentMinimal } from '../../components/CoffeeMomentMinimal';
 import { generateCareInsight, RecentHistory } from '../../utils/careInsights';
 import { listLogsInRange } from '../../storage/carePlanRepo';
@@ -96,6 +97,18 @@ export default function JournalTab() {
   const [isSampleMode, setIsSampleMode] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const coffeeMoment = useCoffeeMoment(0, false);
+
+  // Shadow event store read — validates parity before full cutover
+  const todayStr = getTodayDateString();
+  const { events: todayEvents } = useEventRange(todayStr, todayStr);
+
+  useEffect(() => {
+    if (__DEV__ && todayEvents.length > 0) {
+      console.log('[Journal] Event store count:', todayEvents.length);
+      console.log('[Journal] Event types:',
+        [...new Set(todayEvents.map(e => e.type))]);
+    }
+  }, [todayEvents]);
 
   const loadReport = useCallback(async () => {
     try {
