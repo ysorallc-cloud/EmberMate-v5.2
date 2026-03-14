@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { navigate } from '../../lib/navigate';
 import { Colors } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
-import { DayState, DayStateRoutine, DayStateItem } from '../../types/dayState';
+import { DayState, DayStateRoutine, DayStateItem } from '../../types/derived';
 
 // ============================================================================
 // TYPES
