@@ -13,8 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { CareBrief } from '../../utils/careSummaryBuilder';
-import { buildDailySummaryReport, buildClinicalReportData } from '../../utils/reportBuilders';
+import { CareBrief, buildDailySummaryReport, buildClinicalReportData } from '../../utils/careSummaryBuilder';
 import { generateAndSharePDF } from '../../utils/pdfExport';
 
 interface GlanceStat {
