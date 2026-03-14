@@ -22,27 +22,33 @@ import {
   removeOverride,
   updateCarePlan as updateCarePlanStorage,
 } from '../utils/carePlanStorage';
-import {
-  deriveDayState,
-  DerivationInputs,
-  createEmptyDayState,
-} from '../utils/deriveDayState';
-import { getMedications, Medication } from '../utils/medicationStorage';
-import { getUpcomingAppointments, Appointment } from '../utils/appointmentStorage';
-import {
-  getTodayVitalsLog,
-  getTodayMoodLog,
-  getTodayMealsLog,
-  getTodayWaterLog,
-  getTodaySleepLog,
-  VitalsLog,
-  MoodLog,
-  MealsLog,
-  WaterLog,
-  SleepLog,
-} from '../utils/centralStorage';
-import { getLogEventsByDate, LogEvent } from '../utils/logEvents';
-import { DataIntegrityWarning } from '../utils/deriveDayState';
+
+// Inlined from deprecated deriveDayState.ts
+export interface DataIntegrityWarning {
+  type: 'missing_medication' | 'missing_appointment' | 'orphaned_item';
+  routineId: string;
+  itemId: string;
+  message: string;
+  missingId?: string;
+}
+
+function createEmptyDayState(date: string): DayState {
+  return {
+    date,
+    progress: {
+      meds: { completed: 0, expected: 0 },
+      vitals: { completed: 0, expected: 0 },
+      meals: { completed: 0, expected: 0 },
+      mood: { completed: 0, expected: 0 },
+      hydration: { completed: 0, expected: 0 },
+      sleep: { completed: 0, expected: 0 },
+    },
+    routines: [],
+    timeline: [],
+    nextAction: null,
+    allComplete: false,
+  };
+}
 
 // ============================================================================
 // TYPES
@@ -88,76 +94,25 @@ export function useCarePlan(date?: string): UseCarePlanReturn {
   const [error, setError] = useState<Error | null>(null);
 
   /**
-   * Load all data and derive state
-   * Uses the FROZEN daily snapshot of the CarePlan to ensure consistency
-   * CarePlan edits only take effect the next day
+   * Load care plan and overrides.
+   * DayState derivation has been deprecated in favor of useCareTasks hook.
+   * This hook now returns an empty DayState — consumers needing task/progress
+   * data should use useCareTasks() directly.
    */
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get the effective (frozen) care plan for today
-      // This ensures CarePlan edits only affect tomorrow
-      const effectivePlan = await getEffectiveCarePlan(targetDate);
-
-      // Also get the current (live) plan for reference (e.g., settings display)
       const livePlan = await getCarePlan();
       setCarePlan(livePlan);
 
-      if (!effectivePlan) {
-        // No care plan exists
-        setDayState(createEmptyDayState(targetDate));
-        setLoading(false);
-        return;
-      }
-
-      // Load all data in parallel (including logEvents for single source of truth)
-      const [
-        medications,
-        vitalsLog,
-        moodLog,
-        mealsLog,
-        waterLog,
-        sleepLog,
-        appointments,
-        overrides,
-        logEvents,
-      ] = await Promise.all([
-        getMedications(),
-        getTodayVitalsLog(),
-        getTodayMoodLog(),
-        getTodayMealsLog(),
-        getTodayWaterLog(),
-        getTodaySleepLog(),
-        getUpcomingAppointments(),
-        getOverrides(targetDate),
-        getLogEventsByDate(targetDate),
-      ]);
-
-      // Derive day state from FROZEN CarePlan snapshot
-      // This ensures progress is always computed against the same plan all day
-      // Uses logEvents as single source of truth when available
-      const inputs: DerivationInputs = {
-        date: targetDate,
-        currentTime: new Date(),
-        carePlan: effectivePlan,
-        medications: medications as Medication[],
-        vitalsLog: vitalsLog as VitalsLog | null,
-        moodLog: moodLog as MoodLog | null,
-        mealsLog: mealsLog as MealsLog | null,
-        waterLog: waterLog as WaterLog | null,
-        sleepLog: sleepLog as SleepLog | null,
-        appointments: appointments as Appointment[],
-        overrides,
-        logEvents: logEvents as LogEvent[],  // Single source of truth
-        validateReferences: true,  // Enable data integrity checking
-      };
-
-      const state = deriveDayState(inputs);
-      setDayState(state);
+      const overrides = await getOverrides(targetDate);
       setOverridesState(overrides);
-      setIntegrityWarnings(state.integrityWarnings || []);
+
+      // Return empty DayState — real task data comes from useCareTasks
+      setDayState(createEmptyDayState(targetDate));
+      setIntegrityWarnings([]);
     } catch (err) {
       logError('useCarePlan.loadData', err);
       setError(err instanceof Error ? err : new Error('Failed to load care plan'));
