@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { safeGetItem, safeSetItem } from './safeStorage';
 import { emitDataUpdate } from '../lib/events';
 import { EVENT } from '../lib/eventNames';
-import { CarePlan, CarePlanOverride, isCarePlan } from '../types/dayState';
+import { RoutineCarePlan as CarePlan, CarePlanOverride, isRoutineCarePlan as isCarePlan } from '../types/derived';
 import { generateDefaultCarePlan } from './carePlanDefaults';
 import { devLog, logError } from './devLog';
 import { getTodayDateString } from '../services/carePlanGenerator';
