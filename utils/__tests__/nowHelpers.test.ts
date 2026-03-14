@@ -315,18 +315,18 @@ describe('groupByTimeWindow', () => {
 describe('getRouteForInstanceType', () => {
   it('should map known item types to correct routes', () => {
     expect(getRouteForInstanceType('medication')).toBe('/medication-confirm');
-    expect(getRouteForInstanceType('vitals')).toBe('/log-vitals');
+    expect(getRouteForInstanceType('vitals')).toBe('/quick-log?expand=vitals');
     expect(getRouteForInstanceType('nutrition')).toBe('/log-meal');
-    expect(getRouteForInstanceType('mood')).toBe('/log-mood');
-    expect(getRouteForInstanceType('sleep')).toBe('/log-sleep');
-    expect(getRouteForInstanceType('hydration')).toBe('/log-water');
-    expect(getRouteForInstanceType('activity')).toBe('/log-activity');
+    expect(getRouteForInstanceType('mood')).toBe('/quick-log?expand=wellness');
+    expect(getRouteForInstanceType('sleep')).toBe('/quick-log?expand=sleep');
+    expect(getRouteForInstanceType('hydration')).toBe('/quick-log?expand=hydration');
+    expect(getRouteForInstanceType('activity')).toBe('/quick-log?expand=activity');
     expect(getRouteForInstanceType('appointment')).toBe('/appointments');
   });
 
-  it('should default to /log-note for unknown types', () => {
-    expect(getRouteForInstanceType('custom')).toBe('/log-note');
-    expect(getRouteForInstanceType('unknown')).toBe('/log-note');
+  it('should default to /quick-log for unknown types', () => {
+    expect(getRouteForInstanceType('custom')).toBe('/quick-log?expand=note');
+    expect(getRouteForInstanceType('unknown')).toBe('/quick-log?expand=note');
   });
 });
 

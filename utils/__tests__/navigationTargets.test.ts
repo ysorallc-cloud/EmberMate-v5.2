@@ -49,9 +49,8 @@ describe('Navigation targets reference real routes', () => {
     expect(routeExists('/log-medication-confirm')).toBe(false);
   });
 
-  test('/log-water exists (was /log-hydration)', () => {
-    expect(routeExists('/log-water')).toBe(true);
-    expect(routeExists('/log-hydration')).toBe(false);
+  test('/quick-log exists (absorbed log-water, log-hydration)', () => {
+    expect(routeExists('/quick-log')).toBe(true);
   });
 
   test('quickLogOptions screens all resolve to real routes', () => {
