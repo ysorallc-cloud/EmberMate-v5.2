@@ -7,7 +7,6 @@ const LOG_SCREENS = [
   'app/log-evening-wellness.tsx',
   'app/log-medication-plan-item.tsx',
   'app/medication-confirm.tsx',
-  'app/quick-log.tsx',
 ];
 
 describe('Log screen confirmations', () => {

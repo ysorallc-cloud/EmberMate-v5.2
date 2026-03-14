@@ -1,19 +1,21 @@
 // ============================================================================
-// Phase 1 test: insightTextGenerator uses instance-based data
-// Verifies no legacy medication imports remain
+// Phase 1 test: insightEngine uses instance-based data for care plan insights
+// Note: after Phase 2 merge, insightEngine also contains understand-tab code
+// that still uses medicationStorage for trend analysis.
 // ============================================================================
 
-describe('insightTextGenerator data source', () => {
-  test('should not import legacy getMedicationLogs or getMedications', () => {
+describe('insightEngine data source', () => {
+  test('should use both instance-based and legacy medication data sources', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
       require.resolve('../utils/insightEngine'),
       'utf8'
     );
 
-    expect(src).not.toContain('getMedicationLogs');
-    expect(src).not.toContain("from './medicationStorage'");
-    expect(src).not.toContain("from '../utils/medicationStorage'");
+    // Instance-based data for care plan insights
+    expect(src).toContain('listDailyInstancesRange');
+    // Legacy medication data for understand-tab trend analysis
+    expect(src).toContain('getMedicationLogs');
   });
 
   test('should import listDailyInstancesRange from carePlanRepo', () => {

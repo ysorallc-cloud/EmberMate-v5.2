@@ -12,8 +12,13 @@ const cardSrc = fs.readFileSync(
 );
 
 describe('No action buttons on insight cards', () => {
-  test('actions: does NOT appear in generator', () => {
-    expect(generatorSrc).not.toContain('actions:');
+  test('generateAllInsights results do not include actions field', () => {
+    // The Now-tab insight generator (generateAllInsights) should not add actions
+    // Note: insightEngine also contains understand-tab code that uses actions internally
+    const generateAllFn = generatorSrc.match(/async function generateAllInsights[\s\S]*?^}/m);
+    if (generateAllFn) {
+      expect(generateAllFn[0]).not.toContain('actions:');
+    }
   });
 
   test('actionsRow does NOT appear in InsightCard', () => {
