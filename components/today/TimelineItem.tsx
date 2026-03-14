@@ -52,7 +52,7 @@ export const TimelineItem: React.FC<Props> = ({ item, isLast }) => {
         navigate('/log-evening-wellness');
         break;
       case 'vitals':
-        navigate('/log-vitals');
+        navigate('/quick-log?expand=vitals');
         break;
     }
   };

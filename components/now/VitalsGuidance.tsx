@@ -73,7 +73,7 @@ export const VitalsGuidance: React.FC<VitalsGuidanceProps> = ({
   }, []);
 
   const handleLogRecheck = useCallback(() => {
-    navigate('/log-vitals');
+    navigate('/quick-log?expand=vitals');
     setCurrentStep(2);
   }, []);
 
