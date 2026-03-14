@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const generatorSrc = fs.readFileSync(
-  path.resolve(__dirname, '../utils/insightTextGenerator.ts'),
+  path.resolve(__dirname, '../utils/insightEngine.ts'),
   'utf-8',
 );
 

@@ -7,7 +7,7 @@ describe('insightTextGenerator data gaps', () => {
   test('generateDataGaps should be async (uses instance data)', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../utils/insightTextGenerator'),
+      require.resolve('../utils/insightEngine'),
       'utf8'
     );
 
@@ -19,7 +19,7 @@ describe('insightTextGenerator data gaps', () => {
   test('generateDataGaps should check per-bucket gaps', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../utils/insightTextGenerator'),
+      require.resolve('../utils/insightEngine'),
       'utf8'
     );
 
@@ -31,7 +31,7 @@ describe('insightTextGenerator data gaps', () => {
   test('should export computePeriodSummary', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../utils/insightTextGenerator'),
+      require.resolve('../utils/insightEngine'),
       'utf8'
     );
 

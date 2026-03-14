@@ -7,7 +7,7 @@ describe('insightTextGenerator data source', () => {
   test('should not import legacy getMedicationLogs or getMedications', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../utils/insightTextGenerator'),
+      require.resolve('../utils/insightEngine'),
       'utf8'
     );
 
@@ -19,7 +19,7 @@ describe('insightTextGenerator data source', () => {
   test('should import listDailyInstancesRange from carePlanRepo', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../utils/insightTextGenerator'),
+      require.resolve('../utils/insightEngine'),
       'utf8'
     );
 
@@ -30,7 +30,7 @@ describe('insightTextGenerator data source', () => {
   test('should reference daysBack in watch/improvement body text', () => {
     const fs = require('fs');
     const src = fs.readFileSync(
-      require.resolve('../utils/insightTextGenerator'),
+      require.resolve('../utils/insightEngine'),
       'utf8'
     );
 
