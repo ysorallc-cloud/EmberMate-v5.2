@@ -24,7 +24,7 @@ export const EndOfDayCard: React.FC<EndOfDayCardProps> = ({
   };
 
   const handleAddNote = () => {
-    router.push('/log-note');
+    router.push('/quick-log?expand=note');
   };
 
   return (

@@ -148,7 +148,7 @@ export function QuickAddSheet({ visible, onClose }: Props) {
                       style={styles.optionCard}
                       onPress={() => {
                         onClose();
-                        navigate('/log-pain');
+                        navigate('/quick-log?expand=pain');
                       }}
                     >
                       <Text style={styles.optionIcon}>{'\uD83E\uDE79'}</Text>
@@ -167,7 +167,7 @@ export function QuickAddSheet({ visible, onClose }: Props) {
                       style={styles.optionCard}
                       onPress={() => {
                         onClose();
-                        navigate('/log-water');
+                        navigate('/quick-log?expand=hydration');
                       }}
                     >
                       <Text style={styles.optionIcon}>{'\uD83D\uDCA7'}</Text>

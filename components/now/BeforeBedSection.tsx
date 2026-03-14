@@ -41,7 +41,7 @@ function buildBeforeBedItems(
   if (enabledBuckets.includes('sleep') && !brief.sleep.logged) {
     const pronoun = patientGender?.toLowerCase() === 'male' ? 'he'
       : patientGender?.toLowerCase() === 'female' ? 'she' : 'they';
-    const sleepRoute = '/log-sleep';
+    const sleepRoute = '/quick-log?expand=sleep';
     if (!seenRoutes.has(sleepRoute)) {
       seenRoutes.add(sleepRoute);
       items.push({ icon: '😴', text: `Log sleep when ${pronoun} go${pronoun === 'they' ? '' : 'es'} to bed`, route: sleepRoute });
