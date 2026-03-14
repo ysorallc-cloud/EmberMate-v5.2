@@ -371,7 +371,7 @@ export async function analyzeMoodPatterns(): Promise<InsightData | null> {
           label: 'Add Note About Mood',
           icon: '📝',
           type: 'navigate',
-          destination: '/log-note',
+          destination: '/quick-log?expand=note',
         },
         {
           id: 'discuss-doctor',
@@ -2180,7 +2180,7 @@ const VALID_ROUTES = new Set([
   '/care-report',
   '/notification-settings',
   '/medications',
-  '/log-note',
+  '/quick-log',
   '/settings',
 ]);
 

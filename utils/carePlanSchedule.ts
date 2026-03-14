@@ -226,7 +226,7 @@ function getItemAction(item: DayStateItem): {
       return {
         actionLabel: 'Log',
         actionType: 'log',
-        actionRoute: '/log-vitals',
+        actionRoute: '/quick-log?expand=vitals',
       };
     case 'meals':
       return {
@@ -238,19 +238,19 @@ function getItemAction(item: DayStateItem): {
       return {
         actionLabel: 'Log',
         actionType: 'log',
-        actionRoute: '/log-mood',
+        actionRoute: '/quick-log?expand=wellness',
       };
     case 'sleep':
       return {
         actionLabel: 'Log',
         actionType: 'log',
-        actionRoute: '/log-sleep',
+        actionRoute: '/quick-log?expand=sleep',
       };
     case 'hydration':
       return {
         actionLabel: 'Log',
         actionType: 'log',
-        actionRoute: '/log-water',
+        actionRoute: '/quick-log?expand=hydration',
       };
     case 'appointment':
       return {
