@@ -28,7 +28,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { TimeRange } from '../../utils/understandInsights';
 import { logError } from '../../utils/devLog';
 import { useDataListener } from '../../lib/events';
-import { generateAllInsights, InsightResults, computePeriodSummary, PeriodSummary, generateSummaryText } from '../../utils/insightTextGenerator';
+import { generateAllInsights, InsightResults, computePeriodSummary, PeriodSummary, generateSummaryText } from '../../utils/insightEngine';
 import { InsightSection } from '../../components/insights/InsightSection';
 import { InsightsCalendar } from '../../components/insights/InsightsCalendar';
 import { getOrCreateCarePlanConfig } from '../../storage/carePlanConfigRepo';
