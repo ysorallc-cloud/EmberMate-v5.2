@@ -585,11 +585,12 @@ export default function NowScreen() {
       });
       return;
     }
-    // Pain: route to dedicated pain tracking screen
+    // Pain: route to quick-log with pain expand
     if (instance.itemName?.toLowerCase().includes('pain')) {
       navigate({
-        pathname: '/log-pain',
+        pathname: '/quick-log',
         params: {
+          expand: 'pain',
           instanceId: instance.id,
           carePlanItemId: instance.carePlanItemId || '',
           itemName: instance.itemName || '',
