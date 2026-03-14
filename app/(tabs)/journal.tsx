@@ -23,7 +23,7 @@ import {
   CareBrief,
   MedicationDetail,
 } from '../../utils/careSummaryBuilder';
-import { logError } from '../../utils/devLog';
+import { devLog, logError } from '../../utils/devLog';
 import { useEnabledBuckets } from '../../hooks/useCarePlanConfig';
 import { getTodayDateString } from '../../services/carePlanGenerator';
 import { logAuditEvent, AuditEventType, AuditSeverity } from '../../utils/auditLog';
@@ -103,9 +103,9 @@ export default function JournalTab() {
   const { events: todayEvents } = useEventRange(todayStr, todayStr);
 
   useEffect(() => {
-    if (__DEV__ && todayEvents.length > 0) {
-      console.log('[Journal] Event store count:', todayEvents.length);
-      console.log('[Journal] Event types:',
+    if (todayEvents.length > 0) {
+      devLog('[Journal] Event store count:', todayEvents.length);
+      devLog('[Journal] Event types:',
         [...new Set(todayEvents.map(e => e.type))]);
     }
   }, [todayEvents]);
