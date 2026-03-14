@@ -12,7 +12,7 @@ import {
   getPrimaryInsight,
   getInsightsForCategory,
   getCurrentWindowLabel,
-} from '../utils/insightRules';
+} from '../utils/careInsights';
 import { TimeWindowLabel } from '../types/carePlan';
 
 // ============================================================================

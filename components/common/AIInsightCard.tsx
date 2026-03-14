@@ -7,7 +7,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Colors, Spacing, BorderRadius } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
-import { AIInsight, InsightType } from '../../utils/insightRules';
+import { AIInsight, InsightType } from '../../utils/careInsights';
 import { ComponentRole } from '../../types/componentRoles';
 
 // ============================================================================
