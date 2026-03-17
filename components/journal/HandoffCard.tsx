@@ -178,7 +178,7 @@ export function HandoffCard({ onSharePress }: { onSharePress?: () => void } = {}
       {/* Footer Link */}
       <TouchableOpacity
         style={styles.footerLink}
-        onPress={() => navigate('/(tabs)/journal')}
+        onPress={() => navigate('/(tabs)/timeline')}
         activeOpacity={0.7}
         accessibilityLabel="View full care brief"
         accessibilityRole="link"
