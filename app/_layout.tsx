@@ -233,7 +233,6 @@ function RootLayout() {
           <Stack.Screen name="care-report" />
           <Stack.Screen name="provider-prep" />
           <Stack.Screen name="family-sharing" />
-          <Stack.Screen name="family-activity" />
           <Stack.Screen name="caregiver-management" />
           <Stack.Screen name="notification-settings" />
           <Stack.Screen name="care-plan" />
@@ -246,6 +245,7 @@ function RootLayout() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="medication-confirm" />
           <Stack.Screen name="quick-log" />
+          <Stack.Screen name="insights" />
           <Stack.Screen name="guide-hub" />
           <Stack.Screen name="hub" />
         </Stack>
