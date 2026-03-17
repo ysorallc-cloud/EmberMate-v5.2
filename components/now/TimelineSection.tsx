@@ -5,7 +5,7 @@
 // ============================================================================
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { navigate } from '../../lib/navigate';
 import { MedsBatchPanel } from './MedsBatchPanel';
@@ -24,6 +24,8 @@ import { getDetailedUrgencyLabel, getTimeDeltaString } from '../../utils/urgency
 import { Colors } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { BucketType } from '../../types/carePlanConfig';
+import { hapticSuccess } from '../../utils/hapticFeedback';
+import { logError } from '../../utils/devLog';
 import { InlineLogForm } from '../timeline/InlineLogForm';
 
 // ============================================================================
@@ -473,6 +475,36 @@ function TimelineModeBContent({
   const currentWindow = getCurrentTimeWindow();
   const windowOrder: TimeWindow[] = ['morning', 'afternoon', 'evening', 'night'];
 
+  const isWindowCurrentOrPast = (w: TimeWindow): boolean => {
+    const order = ['morning', 'afternoon', 'evening', 'night'];
+    return order.indexOf(w) <= order.indexOf(currentWindow);
+  };
+
+  const handleBatchComplete = (windowLabel: string, instances: any[]) => {
+    Alert.alert(
+      `Complete ${windowLabel}?`,
+      `Mark all ${instances.length} items as done?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Complete All',
+          onPress: async () => {
+            for (const instance of instances) {
+              try {
+                if (completeTask) {
+                  await completeTask(instance.id, 'completed');
+                }
+              } catch (err) {
+                logError('batchComplete', err);
+              }
+            }
+            hapticSuccess();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <>
       {/* Time-grouped list — section header is rendered by now.tsx SectionHeaderRow */}
@@ -538,6 +570,21 @@ function TimelineModeBContent({
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
+
+            {/* Batch complete button */}
+            {!isCollapsed && completeTask && pendingCount === items.length && isWindowCurrentOrPast(window) && items.length > 1 && (
+              <TouchableOpacity
+                onPress={() => handleBatchComplete(TIME_WINDOW_LABELS[window], items)}
+                style={styles.batchCompleteBtn}
+                activeOpacity={0.7}
+                accessibilityLabel={`Complete all ${TIME_WINDOW_LABELS[window]} items`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.batchCompleteText}>
+                  Complete all {TIME_WINDOW_LABELS[window]} items ({items.length})
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Items */}
             {!isCollapsed && (
@@ -910,6 +957,23 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: c.background,
+  },
+  batchCompleteBtn: {
+    marginHorizontal: 8,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: c.accentLight,
+    borderWidth: 1,
+    borderColor: c.accentBorder,
+    alignItems: 'center',
+  },
+  batchCompleteText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: c.accent,
   },
   timeGroupItems: {
     marginLeft: 4,
