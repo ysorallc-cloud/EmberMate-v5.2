@@ -4,7 +4,7 @@
 //           CaregiverZone, Journal brief, compact insight summary
 // ============================================================================
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { navigate } from '../../lib/navigate';
+import { useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -147,9 +148,35 @@ export default function TimelineTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
 
   // Track today's date
   const [today, setToday] = useState(() => getTodayDateString());
+  const [selectedDate, setSelectedDate] = useState(() => getTodayDateString());
+  const isToday = selectedDate === today;
+
+  // Handle calendar return
+  useEffect(() => {
+    if (dateParam) setSelectedDate(dateParam);
+  }, [dateParam]);
+
+  // Date navigation helpers
+  const shiftDate = (days: number) => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    const shifted = d.toISOString().split('T')[0];
+    // Don't go past today
+    if (shifted > today) return;
+    setSelectedDate(shifted);
+  };
+
+  const formatDateLabel = (dateStr: string): string => {
+    const d = new Date(dateStr + 'T12:00:00');
+    const yesterday = new Date(today + 'T12:00:00');
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
 
   // Single source of truth: useCareTasks wraps useDailyCareInstances
   const {
@@ -157,10 +184,10 @@ export default function TimelineTab() {
     instanceState: instancesState,
     completeInstance,
     refresh: refreshCareTasks,
-  } = useCareTasks(today);
+  } = useCareTasks(selectedDate);
 
   // CarePlan hook
-  const { carePlan, overrides, refresh: refreshCarePlan } = useCarePlan(today);
+  const { carePlan, overrides, refresh: refreshCarePlan } = useCarePlan(selectedDate);
 
   // Appointments hook
   const { todayAppointments } = useAppointments();
@@ -169,7 +196,7 @@ export default function TimelineTab() {
   const { hasCarePlan: hasBucketCarePlan, enabledBuckets } = useCarePlanConfig();
 
   // Today Scope - track hidden items count
-  const { suppressedItems, resetToDefaults: restoreAllSuppressed } = useTodayScope(today);
+  const { suppressedItems, resetToDefaults: restoreAllSuppressed } = useTodayScope(selectedDate);
 
   const hasRegimenInstances = instancesState && instancesState.instances.length > 0;
 
@@ -209,7 +236,7 @@ export default function TimelineTab() {
   // COMPUTE STATS
   // ============================================================================
   const todayStats = useMemo((): TodayStats => {
-    if (instancesState && instancesState.instances.length > 0 && instancesState.date === today) {
+    if (instancesState && instancesState.instances.length > 0 && instancesState.date === selectedDate) {
       const getTypeStats = (itemType: string): StatData => {
         const typeInstances = instancesState.instances.filter(i => i.itemType === itemType);
         const completed = typeInstances.filter(i => i.status === 'completed' || i.status === 'skipped').length;
@@ -367,11 +394,14 @@ export default function TimelineTab() {
   useFocusEffect(
     useCallback(() => {
       const currentDate = getTodayDateString();
-      if (currentDate !== today) setToday(currentDate);
+      if (currentDate !== today) {
+        setToday(currentDate);
+        if (isToday) setSelectedDate(currentDate);
+      }
       refreshCareTasks();
       refreshCarePlan();
       loadData();
-    }, [today, refreshCareTasks, refreshCarePlan])
+    }, [selectedDate, refreshCareTasks, refreshCarePlan])
   );
 
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -448,7 +478,33 @@ export default function TimelineTab() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
-        <ScreenHeader title="Timeline" subtitle={`${dayName}, ${dateStr}`} />
+        <ScreenHeader title="Timeline" subtitle={isToday ? `${dayName}, ${dateStr}` : formatDateLabel(selectedDate)} />
+
+        {/* Date navigation */}
+        <View style={styles.dateNav}>
+          <TouchableOpacity onPress={() => shiftDate(-1)} style={styles.dateArrowBtn} accessibilityLabel="Previous day" accessibilityRole="button">
+            <Text style={[styles.dateArrow, { color: colors.accent }]}>{'\u276E'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigate('/calendar')} accessibilityLabel="Pick a date" accessibilityRole="button">
+            <Text style={[styles.dateLabel, { color: colors.textPrimary }]}>
+              {isToday ? 'Today' : formatDateLabel(selectedDate)}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => shiftDate(1)}
+            disabled={isToday}
+            style={styles.dateArrowBtn}
+            accessibilityLabel="Next day"
+            accessibilityRole="button"
+          >
+            <Text style={[styles.dateArrow, { color: isToday ? colors.textDisabled : colors.accent }]}>{'\u276F'}</Text>
+          </TouchableOpacity>
+          {!isToday && (
+            <TouchableOpacity onPress={() => setSelectedDate(today)} style={styles.todayBtn} accessibilityLabel="Go to today" accessibilityRole="button">
+              <Text style={[styles.todayBtnText, { color: colors.accent }]}>Today</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <View style={styles.content}>
 
@@ -546,8 +602,10 @@ export default function TimelineTab() {
                 enabledBuckets={enabledBuckets}
                 waterGlasses={waterGlasses}
                 waterGoal={waterGoal}
-                onWaterUpdate={handleWaterUpdate}
-                onStartRoutine={setActiveRoutineWindow}
+                onWaterUpdate={isToday ? handleWaterUpdate : undefined}
+                onStartRoutine={isToday ? setActiveRoutineWindow : undefined}
+                completeTask={isToday ? async (id, outcome, data) => { await completeInstance(id, outcome); } : undefined}
+                skipTask={isToday ? async (id, reason) => { await completeInstance(id, 'skipped'); } : undefined}
               />
 
               {!hasRegimenInstances && !hasBucketCarePlan && !carePlan && (
@@ -566,7 +624,13 @@ export default function TimelineTab() {
 
               {hasRegimenInstances && allPending.length === 0 && todayTimeline.completed.length === 0 && (
                 <View style={styles.emptyTimeline}>
-                  <Text style={styles.emptyTimelineText}>No items scheduled for today</Text>
+                  <Text style={styles.emptyTimelineText}>No items scheduled for {isToday ? 'today' : 'this date'}</Text>
+                </View>
+              )}
+
+              {!isToday && !hasRegimenInstances && (
+                <View style={styles.emptyTimeline}>
+                  <Text style={styles.emptyTimelineText}>No events were recorded on {formatDateLabel(selectedDate)}.</Text>
                 </View>
               )}
             </View>
@@ -656,6 +720,12 @@ const createStyles = (c: typeof Colors) => StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingTop: 8 },
   content: { paddingHorizontal: 24, paddingTop: 0 },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 8, paddingHorizontal: 24 },
+  dateArrowBtn: { padding: 8 },
+  dateArrow: { fontSize: 18, fontWeight: '600' },
+  dateLabel: { fontSize: 16, fontWeight: '600' },
+  todayBtn: { marginLeft: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: 'rgba(20,184,166,0.12)' },
+  todayBtnText: { fontSize: 12, fontWeight: '600' },
 
   // Section header
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 10, minHeight: 44 },
