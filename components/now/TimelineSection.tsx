@@ -27,6 +27,8 @@ import type { BucketType } from '../../types/carePlanConfig';
 import { hapticSuccess } from '../../utils/hapticFeedback';
 import { logError } from '../../utils/devLog';
 import { InlineLogForm } from '../timeline/InlineLogForm';
+import { SwipeableTimelineItem } from '../today/SwipeableTimelineItem';
+import type { TimelineItem } from '../../types/timeline';
 
 // ============================================================================
 // BUCKET → ITEM TYPE MAPPING
@@ -156,6 +158,25 @@ function getDotColor(instance: any): string {
 
   // Later - use category color but muted
   return ITEM_TYPE_TO_DOT_COLOR[instance.itemType] || 'rgba(255, 255, 255, 0.25)';
+}
+
+function transformToTimelineItem(instance: any): TimelineItem {
+  return {
+    id: instance.id,
+    type: instance.itemType === 'medication' ? 'medication' : 'event',
+    scheduledTime: new Date(instance.scheduledTime),
+    title: instance.itemName || instance.itemType,
+    subtitle: instance.instructions || instance.itemDosage || '',
+    status: instance.status === 'pending' ? 'next' : 'done',
+    instanceId: instance.id,
+    medicationName: instance.itemType === 'medication' ? instance.itemName : undefined,
+    dosage: instance.itemDosage,
+    itemType: instance.itemType,
+    itemName: instance.itemName,
+    itemDosage: instance.itemDosage,
+    carePlanItemId: instance.carePlanItemId,
+    instructions: instance.instructions,
+  };
 }
 
 // ============================================================================
@@ -655,29 +676,39 @@ function TimelineModeBContent({
 
                   return (
                     <View key={instance.id}>
-                      <TouchableOpacity
-                        style={[
-                          styles.timelineItem,
-                          !isExpanded && index < items.length - 1 && styles.timelineItemBorder,
-                        ]}
-                        onPress={handleItemPress}
-                        activeOpacity={0.7}
-                        accessibilityLabel={`${instance.itemName}, ${subtitle}`}
-                        accessibilityRole="button"
-                      >
-                        <View style={styles.timelineDotWrap}>
-                          <View style={[styles.timelineDot, { backgroundColor: dotColor }]} />
-                        </View>
-                        <View style={styles.timelineItemBody}>
-                          <Text style={styles.timelineName} numberOfLines={1}>{instance.itemName}</Text>
-                          {subtitle ? (
-                            <Text style={styles.timelineSub} numberOfLines={1}>{subtitle}</Text>
-                          ) : null}
-                        </View>
-                        <View style={styles.timelineLogButton}>
-                          <Text style={styles.timelineLogButtonText}>{isExpanded ? '\u25BC' : 'Log'}</Text>
-                        </View>
-                      </TouchableOpacity>
+                      {completeTask ? (
+                        <SwipeableTimelineItem
+                          item={transformToTimelineItem(instance)}
+                          isLast={index === items.length - 1}
+                          onComplete={(item) => completeTask(item.id, 'completed')}
+                          onPress={() => handleItemPress()}
+                          onUndo={() => {}}
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          style={[
+                            styles.timelineItem,
+                            !isExpanded && index < items.length - 1 && styles.timelineItemBorder,
+                          ]}
+                          onPress={handleItemPress}
+                          activeOpacity={0.7}
+                          accessibilityLabel={`${instance.itemName}, ${subtitle}`}
+                          accessibilityRole="button"
+                        >
+                          <View style={styles.timelineDotWrap}>
+                            <View style={[styles.timelineDot, { backgroundColor: dotColor }]} />
+                          </View>
+                          <View style={styles.timelineItemBody}>
+                            <Text style={styles.timelineName} numberOfLines={1}>{instance.itemName}</Text>
+                            {subtitle ? (
+                              <Text style={styles.timelineSub} numberOfLines={1}>{subtitle}</Text>
+                            ) : null}
+                          </View>
+                          <View style={styles.timelineLogButton}>
+                            <Text style={styles.timelineLogButtonText}>{isExpanded ? '\u25BC' : 'Log'}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
                       {isExpanded && completeTask && (
                         <InlineLogForm
                           task={{
