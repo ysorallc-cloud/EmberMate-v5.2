@@ -168,7 +168,7 @@ export default function ReportsHub() {
           ))}
 
           {/* Export All */}
-          <TouchableOpacity style={styles.exportAllButton} onPress={() => navigate('/(tabs)/journal')} accessibilityLabel="Export all reports as PDF package" accessibilityRole="button">
+          <TouchableOpacity style={styles.exportAllButton} onPress={() => navigate('/(tabs)/timeline')} accessibilityLabel="Export all reports as PDF package" accessibilityRole="button">
             <GlassCard style={styles.exportAllCard}>
               <View style={styles.exportAllContent}>
                 <Text style={styles.exportAllIcon}>📦</Text>

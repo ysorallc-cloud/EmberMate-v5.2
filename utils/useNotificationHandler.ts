@@ -62,13 +62,13 @@ export function useNotificationHandler() {
       // Handle regular notification taps (default action)
       if (actionId === Notifications.DEFAULT_ACTION_IDENTIFIER) {
         if (data.type === 'medication_reminder') {
-          router.push('/(tabs)/today');
+          router.push('/(tabs)/home');
         } else if (data.type === 'appointment_reminder') {
           router.push('/appointments');
         } else if (data.type === 'refill_reminder') {
           router.push('/medications');
         } else if (data.type === 'daily_checkin') {
-          router.push('/(tabs)/today');
+          router.push('/(tabs)/home');
         }
       }
     });
