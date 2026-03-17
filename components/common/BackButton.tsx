@@ -36,7 +36,7 @@ export interface BackButtonProps {
 
   /**
    * Fallback route if router.back() would exit the app.
-   * Defaults to '/(tabs)/today' (the home screen).
+   * Defaults to '/(tabs)/home' (the home screen).
    */
   fallbackRoute?: string;
 
