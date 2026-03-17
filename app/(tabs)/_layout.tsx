@@ -1,6 +1,6 @@
 // ============================================================================
-// TAB LAYOUT - 3 Tabs (Today, Journal, Understand)
-// V5 — Team/Support moved to Settings > Care Team (Premium)
+// TAB LAYOUT - 4 Tabs (Home, Log, Timeline, Plan)
+// Phase 3 — Navigation restructure
 // ============================================================================
 
 import { Tabs } from 'expo-router';
@@ -15,9 +15,8 @@ const TabIcon = ({ icon, focused, accentGlow, accent }: { icon: string; focused:
     importantForAccessibility="no-hide-descendants"
   >
     <Text style={{
-      fontSize: 24,
+      fontSize: 22,
       opacity: focused ? 1 : 0.5,
-      transform: [{ scale: focused ? 1.1 : 1 }],
       ...(focused && Platform.OS === 'ios' && {
         textShadowColor: accentGlow,
         textShadowOffset: { width: 0, height: 0 },
@@ -32,7 +31,7 @@ const TabIcon = ({ icon, focused, accentGlow, accent }: { icon: string; focused:
         height: 4,
         borderRadius: 2,
         backgroundColor: accent,
-        marginTop: 4,
+        marginTop: 3,
       }} />
     )}
   </View>
@@ -72,30 +71,39 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="today"
+        name="home"
         options={{
-          title: 'Today',
-          tabBarIcon: ({ focused }) => <TabIcon icon="☀️" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
-          tabBarAccessibilityLabel: 'Today tab. What needs attention today',
-          tabBarButtonTestID: 'tab-today',
+          title: 'Home',
+          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
+          tabBarAccessibilityLabel: 'Home tab. What needs attention now',
+          tabBarTestID: 'tab-home',
         }}
       />
       <Tabs.Screen
-        name="journal"
+        name="log"
         options={{
-          title: 'Journal',
-          tabBarIcon: ({ focused }) => <TabIcon icon="📖" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
-          tabBarAccessibilityLabel: 'Journal tab. Review care history and daily summary',
-          tabBarButtonTestID: 'tab-journal',
+          title: 'Log',
+          tabBarIcon: ({ focused }) => <TabIcon icon="✏️" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
+          tabBarAccessibilityLabel: 'Log tab. Record care events',
+          tabBarTestID: 'tab-log',
         }}
       />
       <Tabs.Screen
-        name="understand"
+        name="timeline"
         options={{
-          title: 'Insights',
-          tabBarIcon: ({ focused }) => <TabIcon icon="📊" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
-          tabBarAccessibilityLabel: 'Insights tab. View health patterns and insights',
-          tabBarButtonTestID: 'tab-understand',
+          title: 'Timeline',
+          tabBarIcon: ({ focused }) => <TabIcon icon="📅" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
+          tabBarAccessibilityLabel: 'Timeline tab. View chronological care history',
+          tabBarTestID: 'tab-timeline',
+        }}
+      />
+      <Tabs.Screen
+        name="plan"
+        options={{
+          title: 'Plan',
+          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} accentGlow={colors.accentGlow} accent={colors.accent} />,
+          tabBarAccessibilityLabel: 'Plan tab. Care plan and settings',
+          tabBarTestID: 'tab-plan',
         }}
       />
     </Tabs>
