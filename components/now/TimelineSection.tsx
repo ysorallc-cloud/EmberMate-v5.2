@@ -5,7 +5,7 @@
 // ============================================================================
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation } from 'react-native';
 import { useRouter } from 'expo-router';
 import { navigate } from '../../lib/navigate';
 import { MedsBatchPanel } from './MedsBatchPanel';
@@ -24,6 +24,7 @@ import { getDetailedUrgencyLabel, getTimeDeltaString } from '../../utils/urgency
 import { Colors } from '../../theme/theme-tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { BucketType } from '../../types/carePlanConfig';
+import { InlineLogForm } from '../timeline/InlineLogForm';
 
 // ============================================================================
 // BUCKET → ITEM TYPE MAPPING
@@ -173,6 +174,8 @@ interface TimelineSectionProps {
   waterGoal?: number;
   onWaterUpdate?: (glasses: number) => void;
   onStartRoutine?: (window: TimeWindow) => void;
+  completeTask?: (taskId: string, outcome: string, data?: any) => Promise<void>;
+  skipTask?: (taskId: string, reason?: string) => Promise<void>;
 }
 
 // ============================================================================
@@ -193,6 +196,8 @@ export function TimelineSection({
   waterGoal = 8,
   onWaterUpdate,
   onStartRoutine,
+  completeTask,
+  skipTask,
 }: TimelineSectionProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -417,6 +422,8 @@ export function TimelineSection({
       completed={completed}
       onItemPress={onItemPress}
       onStartRoutine={onStartRoutine}
+      completeTask={completeTask}
+      skipTask={skipTask}
     />
   );
 }
@@ -430,14 +437,19 @@ function TimelineModeBContent({
   completed,
   onItemPress,
   onStartRoutine,
+  completeTask,
+  skipTask,
 }: {
   allPending: any[];
   completed: any[];
   onItemPress: (instance: any) => void;
   onStartRoutine?: (window: TimeWindow) => void;
+  completeTask?: (taskId: string, outcome: string, data?: any) => Promise<void>;
+  skipTask?: (taskId: string, reason?: string) => Promise<void>;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const allItems = [...allPending, ...completed];
   const grouped = groupByTimeWindow(allItems);
 
@@ -583,32 +595,72 @@ function TimelineModeBContent({
                   const subtitle = getItemSubtitle(instance);
                   const delta = getTimeDelta(instance.scheduledTime);
                   const dotColor = getDotColor(instance);
+                  const isExpanded = expandedTaskId === instance.id;
+
+                  const handleItemPress = () => {
+                    if (completeTask) {
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                      setExpandedTaskId(isExpanded ? null : instance.id);
+                    } else {
+                      onItemPress(instance);
+                    }
+                  };
 
                   return (
-                    <TouchableOpacity
-                      key={instance.id}
-                      style={[
-                        styles.timelineItem,
-                        index < items.length - 1 && styles.timelineItemBorder,
-                      ]}
-                      onPress={() => onItemPress(instance)}
-                      activeOpacity={0.7}
-                      accessibilityLabel={`${instance.itemName}, ${subtitle}`}
-                      accessibilityRole="button"
-                    >
-                      <View style={styles.timelineDotWrap}>
-                        <View style={[styles.timelineDot, { backgroundColor: dotColor }]} />
-                      </View>
-                      <View style={styles.timelineItemBody}>
-                        <Text style={styles.timelineName} numberOfLines={1}>{instance.itemName}</Text>
-                        {subtitle ? (
-                          <Text style={styles.timelineSub} numberOfLines={1}>{subtitle}</Text>
-                        ) : null}
-                      </View>
-                      <View style={styles.timelineLogButton}>
-                        <Text style={styles.timelineLogButtonText}>Log</Text>
-                      </View>
-                    </TouchableOpacity>
+                    <View key={instance.id}>
+                      <TouchableOpacity
+                        style={[
+                          styles.timelineItem,
+                          !isExpanded && index < items.length - 1 && styles.timelineItemBorder,
+                        ]}
+                        onPress={handleItemPress}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`${instance.itemName}, ${subtitle}`}
+                        accessibilityRole="button"
+                      >
+                        <View style={styles.timelineDotWrap}>
+                          <View style={[styles.timelineDot, { backgroundColor: dotColor }]} />
+                        </View>
+                        <View style={styles.timelineItemBody}>
+                          <Text style={styles.timelineName} numberOfLines={1}>{instance.itemName}</Text>
+                          {subtitle ? (
+                            <Text style={styles.timelineSub} numberOfLines={1}>{subtitle}</Text>
+                          ) : null}
+                        </View>
+                        <View style={styles.timelineLogButton}>
+                          <Text style={styles.timelineLogButtonText}>{isExpanded ? '\u25BC' : 'Log'}</Text>
+                        </View>
+                      </TouchableOpacity>
+                      {isExpanded && completeTask && (
+                        <InlineLogForm
+                          task={{
+                            id: instance.id,
+                            type: instance.itemType,
+                            title: instance.itemName || instance.itemType,
+                            subtitle: instance.itemDosage || instance.instructions,
+                            windowLabel: instance.windowLabel,
+                            instanceId: instance.id,
+                            carePlanItemId: instance.carePlanItemId,
+                            itemName: instance.itemName,
+                            itemDosage: instance.itemDosage,
+                          }}
+                          onComplete={async (taskId, data) => {
+                            await completeTask(taskId, 'completed', data);
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            setExpandedTaskId(null);
+                          }}
+                          onSkip={async (taskId, reason) => {
+                            if (skipTask) await skipTask(taskId, reason);
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            setExpandedTaskId(null);
+                          }}
+                          onClose={() => {
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            setExpandedTaskId(null);
+                          }}
+                        />
+                      )}
+                    </View>
                   );
                 })}
               </View>
