@@ -99,7 +99,7 @@ export default function OnboardingFlow() {
       }
 
       // Navigate to main app
-      router.replace('/(tabs)/today');
+      router.replace('/(tabs)/home');
     } catch (error) {
       logError('OnboardingFlow.completeOnboarding', error);
     }
