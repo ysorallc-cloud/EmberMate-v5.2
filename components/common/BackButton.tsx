@@ -66,9 +66,10 @@ export interface BackButtonProps {
  * instead of potentially exiting the app.
  */
 const ROOT_ROUTES = new Set([
-  '/(tabs)/today',
-  '/(tabs)/journal',
-  '/(tabs)/understand',
+  '/(tabs)/home',
+  '/(tabs)/log',
+  '/(tabs)/timeline',
+  '/(tabs)/plan',
   '/(tabs)/family',
   '/(tabs)/support',
   '/settings',
@@ -78,7 +79,7 @@ const ROOT_ROUTES = new Set([
 /**
  * Default fallback route when back navigation isn't safe.
  */
-const DEFAULT_FALLBACK = '/(tabs)/today';
+const DEFAULT_FALLBACK = '/(tabs)/home';
 
 // ============================================================================
 // COMPONENT

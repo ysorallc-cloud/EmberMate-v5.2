@@ -22,7 +22,7 @@ export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedC
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => navigate('/(tabs)/journal')}
+      onPress={() => navigate('/(tabs)/timeline')}
       activeOpacity={0.7}
       accessibilityLabel="Create handoff report for tonight's caregiver"
       accessibilityRole="button"
@@ -38,7 +38,7 @@ export const HandoffPromptCard: React.FC<HandoffPromptCardProps> = ({ completedC
         </View>
         <TouchableOpacity
           style={styles.createButton}
-          onPress={() => navigate('/(tabs)/journal')}
+          onPress={() => navigate('/(tabs)/timeline')}
           activeOpacity={0.7}
           accessibilityLabel="Create handoff report"
           accessibilityRole="button"
